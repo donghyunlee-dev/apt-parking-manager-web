@@ -22,6 +22,8 @@ import {
 } from './api';
 import NoticeEditor from './NoticeEditor';
 
+// [v0] Cache invalidation: 2026-02-14 01:02:15
+
 const navItems = [
   { label: '��ú���', to: '/dashboard' },
   { label: '���� ����', to: '/bouncers' },
