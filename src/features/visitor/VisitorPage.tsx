@@ -1,8 +1,9 @@
-﻿import { type MouseEvent, useCallback, useState } from 'react';
+import { type MouseEvent, useCallback, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Plus } from 'lucide-react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
 import DataTable from '@/shared/components/table/DataTable';
@@ -11,6 +12,9 @@ import Modal from '@/shared/components/feedback/Modal';
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
 import Skeleton from '@/shared/components/feedback/Skeleton';
+import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
+import { Select } from '@/shared/components/ui/Select';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
 import type { VisitHistory, VisitorListResponse, VisitorVehicle } from './types';
@@ -22,15 +26,6 @@ import {
   updateVisitorVehicle,
 } from './api';
 import { calcDday, calcStatus, formatDate } from './utils';
-
-const navItems = [
-  { label: '대시보드', to: '/dashboard' },
-  { label: '경비원 관리', to: '/bouncers' },
-  { label: '입주민 차량 관리', to: '/residents' },
-  { label: '방문 차량 관리', to: '/visitors' },
-  { label: '차량 조회', to: '/reports' },
-  { label: '공지사항 관리', to: '/notices' },
-];
 
 const formSchema = z.object({
   building: z.string().min(1, '동을 입력하세요.'),
@@ -182,7 +177,7 @@ const VisitorPage = () => {
               variant={statusLabel === 'active' ? 'success' : 'error'}
             />
             {statusLabel === 'active' && dday <= 3 && (
-              <span className="text-xs text-amber-600 dark:text-amber-300">D-{dday}</span>
+              <span className="text-xs text-warning">D-{dday}</span>
             )}
           </div>
         );
@@ -194,37 +189,9 @@ const VisitorPage = () => {
       align: 'right' as const,
       cell: (row: VisitorVehicle) => (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            onClick={(event) => {
-              event.stopPropagation();
-              openEditModal(row);
-            }}
-          >
-            수정
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            onClick={(event) => {
-              event.stopPropagation();
-              openHistory(row);
-            }}
-          >
-            이력
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
-            onClick={(event) => {
-              event.stopPropagation();
-              setDeleteTarget(row);
-              setConfirmOpen(true);
-            }}
-          >
-            삭제
-          </button>
+          <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); openEditModal(row); }}>수정</Button>
+          <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); openHistory(row); }}>이력</Button>
+          <Button variant="destructive" size="sm" onClick={(event) => { event.stopPropagation(); setDeleteTarget(row); setConfirmOpen(true); }}>삭제</Button>
         </div>
       ),
     },
@@ -271,20 +238,17 @@ const VisitorPage = () => {
   };
 
   return (
-    <DashboardLayout
-      apartmentName={apartmentName}
-      userName={userName}
-      navItems={navItems}
-      onLogout={logout}
-    >
+    <DashboardLayout apartmentName={apartmentName} userName={userName} onLogout={logout}>
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            방문 차량 관리
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            방문 차량 등록과 방문 이력을 관리합니다.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">방문 차량 관리</h2>
+            <p className="mt-1 text-sm text-muted-foreground">방문 차량 등록과 방문 이력을 관리합니다.</p>
+          </div>
+          <Button onClick={openCreateModal}>
+            <Plus size={16} aria-hidden="true" />
+            방문 차량 등록
+          </Button>
         </div>
 
         <SearchBar
@@ -295,47 +259,19 @@ const VisitorPage = () => {
           placeholder="차량번호, 호수, 연락처 검색"
           filters={
             <div className="flex flex-wrap gap-2">
-              <select
-                value={status}
-                onChange={(event) => {
-                  setStatus(event.target.value as 'active' | 'expired' | '');
-                  setPage(1);
-                }}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              >
+              <Select value={status} onChange={(event) => { setStatus(event.target.value as 'active' | 'expired' | ''); setPage(1); }} className="w-auto">
                 <option value="">전체</option>
                 <option value="active">유효</option>
                 <option value="expired">만료</option>
-              </select>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-                onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
+              </Select>
+              <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} onClick={openDatePicker} className="w-auto" />
+              <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} onClick={openDatePicker} className="w-auto" />
             </div>
           }
         />
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
-            onClick={openCreateModal}
-          >
-            + 방문 차량 등록
-          </button>
-        </div>
 
         {isLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-xl border border-border bg-card p-6">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="mt-4 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-full" />
@@ -361,115 +297,48 @@ const VisitorPage = () => {
         title={editing ? '방문 차량 수정' : '방문 차량 등록'}
         description="방문 기간을 입력하세요."
         onClose={() => setModalOpen(false)}
-        footer={
-          <>
-            <button
-              type="submit"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-              form="visitor-form"
-            >
-              {editing ? '수정' : '등록'}
-            </button>
-          </>
-        }
+        footer={<Button type="submit" form="visitor-form">{editing ? '수정' : '등록'}</Button>}
       >
         <form id="visitor-form" className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-3 md:grid-cols-2">
             <FormField id="building" label="동" required error={errors.building?.message}>
-              <input
-                id="building"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('building')}
-              />
+              <Input id="building" {...register('building')} />
             </FormField>
             <FormField id="unit" label="호수" required error={errors.unit?.message}>
-              <input
-                id="unit"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('unit')}
-              />
+              <Input id="unit" {...register('unit')} />
             </FormField>
           </div>
-          <FormField
-            id="vehicle_number"
-            label="차량번호"
-            required
-            error={errors.vehicle_number?.message}
-          >
-            <input
-              id="vehicle_number"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...register('vehicle_number')}
-            />
+          <FormField id="vehicle_number" label="차량번호" required error={errors.vehicle_number?.message}>
+            <Input id="vehicle_number" {...register('vehicle_number')} />
           </FormField>
-          <FormField
-            id="visitor_phone"
-            label="연락처"
-            required
-            error={errors.visitor_phone?.message}
-          >
-            <input
-              id="visitor_phone"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...register('visitor_phone')}
-            />
+          <FormField id="visitor_phone" label="연락처" required error={errors.visitor_phone?.message}>
+            <Input id="visitor_phone" {...register('visitor_phone')} />
           </FormField>
           <div className="grid gap-3 md:grid-cols-2">
-            <FormField
-              id="visit_start_date"
-              label="시작일"
-              required
-              error={errors.visit_start_date?.message}
-            >
-              <input
-                id="visit_start_date"
-                type="date"
-                onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('visit_start_date')}
-              />
+            <FormField id="visit_start_date" label="시작일" required error={errors.visit_start_date?.message}>
+              <Input id="visit_start_date" type="date" onClick={openDatePicker} {...register('visit_start_date')} />
             </FormField>
-            <FormField
-              id="visit_end_date"
-              label="종료일"
-              required
-              error={errors.visit_end_date?.message}
-            >
-              <input
-                id="visit_end_date"
-                type="date"
-                onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('visit_end_date')}
-              />
+            <FormField id="visit_end_date" label="종료일" required error={errors.visit_end_date?.message}>
+              <Input id="visit_end_date" type="date" onClick={openDatePicker} {...register('visit_end_date')} />
             </FormField>
           </div>
         </form>
       </Modal>
 
-      <Modal
-        open={historyOpen}
-        title="방문 이력"
-        description="차량별 방문 기록을 확인합니다."
-        onClose={() => setHistoryOpen(false)}
-      >
+      <Modal open={historyOpen} title="방문 이력" description="차량별 방문 기록을 확인합니다." onClose={() => setHistoryOpen(false)}>
         <div className="flex flex-col gap-3">
           {selectedVisitor && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900">
-              차량번호: {selectedVisitor.vehicle_number} / 방문 호수: {selectedVisitor.building}동{' '}
-              {selectedVisitor.unit}호
+            <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm">
+              차량번호: {selectedVisitor.vehicle_number} / 방문 호수: {selectedVisitor.building}동 {selectedVisitor.unit}호
             </div>
           )}
           {historyItems.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">방문 이력이 없습니다.</p>
+            <p className="text-sm text-muted-foreground">방문 이력이 없습니다.</p>
           ) : (
             historyItems.map((item) => (
-              <div
-                key={item.history_id}
-                className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-800"
-              >
+              <div key={item.history_id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
                 <span>{formatDate(item.visit_date)}</span>
-                <span className="text-slate-600 dark:text-slate-300">스캔 {item.scan_count}회</span>
+                <span className="text-muted-foreground">스캔 {item.scan_count}회</span>
               </div>
             ))
           )}
@@ -481,15 +350,8 @@ const VisitorPage = () => {
         title="방문 차량 삭제"
         description="삭제하시겠습니까?"
         confirmLabel="삭제"
-        onClose={() => {
-          setConfirmOpen(false);
-          setDeleteTarget(null);
-        }}
-        onConfirm={() => {
-          if (deleteTarget) {
-            deleteMutation.mutate(deleteTarget.visitor_id);
-          }
-        }}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null); }}
+        onConfirm={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget.visitor_id); } }}
       />
     </DashboardLayout>
   );

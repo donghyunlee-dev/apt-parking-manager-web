@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Plus, Upload } from 'lucide-react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
 import DataTable from '@/shared/components/table/DataTable';
@@ -11,6 +12,9 @@ import Modal from '@/shared/components/feedback/Modal';
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
 import Skeleton from '@/shared/components/feedback/Skeleton';
+import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
+import { Select } from '@/shared/components/ui/Select';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
 import type { ResidentVehicle, ResidentVehicleListResponse } from './types';
@@ -23,15 +27,6 @@ import {
   updateResidentVehicle,
 } from './api';
 import { vehicleNumberRegex } from './utils';
-
-const navItems = [
-  { label: '대시보드', to: '/dashboard' },
-  { label: '경비원 관리', to: '/bouncers' },
-  { label: '입주민 차량 관리', to: '/residents' },
-  { label: '방문 차량 관리', to: '/visitors' },
-  { label: '차량 조회', to: '/reports' },
-  { label: '공지사항 관리', to: '/notices' },
-];
 
 const formSchema = z.object({
   building: z.string().min(1, '동을 입력하세요.'),
@@ -187,23 +182,8 @@ const ResidentPage = () => {
       align: 'right' as const,
       cell: (row: ResidentVehicle) => (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            onClick={() => openEditModal(row)}
-          >
-            수정
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
-            onClick={() => {
-              setDeleteTarget(row);
-              setConfirmOpen(true);
-            }}
-          >
-            삭제
-          </button>
+          <Button variant="outline" size="sm" onClick={() => openEditModal(row)}>수정</Button>
+          <Button variant="destructive" size="sm" onClick={() => { setDeleteTarget(row); setConfirmOpen(true); }}>삭제</Button>
         </div>
       ),
     },
@@ -226,17 +206,24 @@ const ResidentPage = () => {
     <DashboardLayout
       apartmentName={apartmentName}
       userName={userName}
-      navItems={navItems}
       onLogout={logout}
     >
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            입주민 차량 관리
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            입주민 차량 정보를 등록하고 관리합니다.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">입주민 차량 관리</h2>
+            <p className="mt-1 text-sm text-muted-foreground">입주민 차량 정보를 등록하고 관리합니다.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setBulkOpen(true)}>
+              <Upload size={14} aria-hidden="true" />
+              일괄 등록
+            </Button>
+            <Button onClick={openCreateModal}>
+              <Plus size={16} aria-hidden="true" />
+              차량 등록
+            </Button>
+          </div>
         </div>
         <SearchBar
           value={search}
@@ -245,38 +232,15 @@ const ResidentPage = () => {
           filterTitle="정렬 조건"
           placeholder="차량번호, 동/호수, 연락처 검색"
           filters={
-            <select
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value);
-                setPage(1);
-              }}
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            >
+            <Select value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }} className="w-auto">
               <option value="created_at_desc">등록일 최신순</option>
               <option value="building_asc">동/호수 오름차순</option>
-            </select>
+            </Select>
           }
         />
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="h-10 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
-            onClick={() => setBulkOpen(true)}
-          >
-            일괄 등록
-          </button>
-          <button
-            type="button"
-            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
-            onClick={openCreateModal}
-          >
-            + 차량 등록
-          </button>
-        </div>
 
         {isLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-xl border border-border bg-card p-6">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="mt-4 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-full" />
@@ -302,54 +266,22 @@ const ResidentPage = () => {
         title={editing ? '차량 정보 수정' : '차량 등록'}
         description="동/호수와 차량번호를 입력하세요."
         onClose={() => setModalOpen(false)}
-        footer={
-          <>
-            <button
-              type="submit"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-              form="resident-form"
-            >
-              {editing ? '수정' : '등록'}
-            </button>
-          </>
-        }
+        footer={<Button type="submit" form="resident-form">{editing ? '수정' : '등록'}</Button>}
       >
         <form id="resident-form" className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-3 md:grid-cols-2">
             <FormField id="building" label="동" required error={errors.building?.message}>
-              <input
-                id="building"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('building')}
-              />
+              <Input id="building" {...register('building')} />
             </FormField>
             <FormField id="unit" label="호수" required error={errors.unit?.message}>
-              <input
-                id="unit"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('unit')}
-              />
+              <Input id="unit" {...register('unit')} />
             </FormField>
           </div>
-          <FormField
-            id="vehicle_number"
-            label="차량번호"
-            required
-            error={errors.vehicle_number?.message}
-          >
-            <input
-              id="vehicle_number"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              placeholder="12가3456"
-              {...register('vehicle_number')}
-            />
+          <FormField id="vehicle_number" label="차량번호" required error={errors.vehicle_number?.message}>
+            <Input id="vehicle_number" placeholder="12가3456" {...register('vehicle_number')} />
           </FormField>
           <FormField id="phone_number" label="연락처" helperText="선택 입력">
-            <input
-              id="phone_number"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...register('phone_number')}
-            />
+            <Input id="phone_number" {...register('phone_number')} />
           </FormField>
         </form>
       </Modal>
@@ -361,27 +293,9 @@ const ResidentPage = () => {
         onClose={() => setBulkOpen(false)}
         footer={
           <>
-            <button
-              type="button"
-              className="rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
-              onClick={() => setBulkOpen(false)}
-            >
-              닫기
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
-              onClick={handleTemplateDownload}
-            >
-              템플릿 다운로드
-            </button>
-            <button
-              type="button"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-              onClick={handleBulkUpload}
-            >
-              업로드
-            </button>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)}>닫기</Button>
+            <Button variant="outline" onClick={handleTemplateDownload}>템플릿 다운로드</Button>
+            <Button onClick={handleBulkUpload}>업로드</Button>
           </>
         }
       >
@@ -404,20 +318,18 @@ const ResidentPage = () => {
             }}
           />
           {bulkFile && (
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-foreground">
               선택한 파일: {bulkFile.name}
             </p>
           )}
           {bulkPreview !== null && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               예상 업로드 건수: {bulkPreview}건
             </p>
           )}
           {bulkResult && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-              <p>
-                총 {bulkResult.total}건 중 성공 {bulkResult.success}건
-              </p>
+            <div className="rounded-lg border border-border bg-muted p-4 text-sm">
+              <p>총 {bulkResult.total}건 중 성공 {bulkResult.success}건</p>
               <p>실패 {bulkResult.failed}건</p>
             </div>
           )}

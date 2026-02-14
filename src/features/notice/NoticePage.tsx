@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Plus } from 'lucide-react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
 import DataTable from '@/shared/components/table/DataTable';
@@ -11,6 +12,9 @@ import Modal from '@/shared/components/feedback/Modal';
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
 import Skeleton from '@/shared/components/feedback/Skeleton';
+import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
+import { Select } from '@/shared/components/ui/Select';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
 import type { Notice, NoticeListResponse } from './types';
@@ -22,15 +26,6 @@ import {
   updateNoticeVisibility,
 } from './api';
 import NoticeEditor from './NoticeEditor';
-
-const navItems = [
-  { label: '대시보드', to: '/dashboard' },
-  { label: '경비원 관리', to: '/bouncers' },
-  { label: '입주민 차량 관리', to: '/residents' },
-  { label: '방문 차량 관리', to: '/visitors' },
-  { label: '차량 조회', to: '/reports' },
-  { label: '공지사항 관리', to: '/notices' },
-];
 
 const formSchema = z.object({
   title: z.string().min(1, '제목을 입력하세요.'),
@@ -158,16 +153,16 @@ const NoticePage = () => {
       id: 'visible',
       header: '공개',
       cell: (row: Notice) => (
-        <button
-          type="button"
-          className="rounded-md border border-slate-200 px-2 py-1 text-xs dark:border-slate-700 dark:text-slate-200"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={(event) => {
             event.stopPropagation();
             visibilityMutation.mutate({ id: row.notice_id, visible: !row.is_visible });
           }}
         >
           {row.is_visible ? 'ON' : 'OFF'}
-        </button>
+        </Button>
       ),
     },
     { id: 'date', header: '등록일', accessor: (row: Notice) => row.created_at },
@@ -177,23 +172,8 @@ const NoticePage = () => {
       align: 'right' as const,
       cell: (row: Notice) => (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            onClick={() => openEditModal(row)}
-          >
-            수정
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
-            onClick={() => {
-              setDeleteTarget(row);
-              setConfirmOpen(true);
-            }}
-          >
-            삭제
-          </button>
+          <Button variant="outline" size="sm" onClick={() => openEditModal(row)}>수정</Button>
+          <Button variant="destructive" size="sm" onClick={() => { setDeleteTarget(row); setConfirmOpen(true); }}>삭제</Button>
         </div>
       ),
     },
@@ -240,20 +220,17 @@ const NoticePage = () => {
   };
 
   return (
-    <DashboardLayout
-      apartmentName={apartmentName}
-      userName={userName}
-      navItems={navItems}
-      onLogout={logout}
-    >
+    <DashboardLayout apartmentName={apartmentName} userName={userName} onLogout={logout}>
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            공지사항 관리
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            공지사항을 작성하고 노출 상태를 관리합니다.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">공지사항 관리</h2>
+            <p className="mt-1 text-sm text-muted-foreground">공지사항을 작성하고 노출 상태를 관리합니다.</p>
+          </div>
+          <Button onClick={openCreateModal}>
+            <Plus size={16} aria-hidden="true" />
+            공지 등록
+          </Button>
         </div>
         <SearchBar
           value={search}
@@ -263,45 +240,22 @@ const NoticePage = () => {
           placeholder="공지사항 검색"
           filters={
             <div className="flex flex-wrap gap-2">
-              <select
-                value={filterVisible}
-                onChange={(event) => {
-                  setFilterVisible(event.target.value as 'true' | 'false' | '');
-                  setPage(1);
-                }}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              >
+              <Select value={filterVisible} onChange={(event) => { setFilterVisible(event.target.value as 'true' | 'false' | ''); setPage(1); }} className="w-auto">
                 <option value="">공개 전체</option>
                 <option value="true">공개</option>
                 <option value="false">비공개</option>
-              </select>
-              <select
-                value={filterImportant}
-                onChange={(event) => {
-                  setFilterImportant(event.target.value as 'true' | 'false' | '');
-                  setPage(1);
-                }}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              >
+              </Select>
+              <Select value={filterImportant} onChange={(event) => { setFilterImportant(event.target.value as 'true' | 'false' | ''); setPage(1); }} className="w-auto">
                 <option value="">중요 전체</option>
                 <option value="true">중요</option>
                 <option value="false">일반</option>
-              </select>
+              </Select>
             </div>
           }
         />
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
-            onClick={openCreateModal}
-          >
-            + 공지 등록
-          </button>
-        </div>
 
         {isLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-xl border border-border bg-card p-6">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="mt-4 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-full" />
@@ -329,78 +283,41 @@ const NoticePage = () => {
         onClose={() => setModalOpen(false)}
         footer={
           <>
-            <button
-              type="submit"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-              form="notice-form"
-            >
-              {editing ? '수정' : '등록'}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
-              onClick={() => {
-                setPreviewContent(contentValue);
-                setPreviewOpen(true);
-              }}
-            >
-              미리보기
-            </button>
+            <Button type="submit" form="notice-form">{editing ? '수정' : '등록'}</Button>
+            <Button variant="outline" onClick={() => { setPreviewContent(contentValue); setPreviewOpen(true); }}>미리보기</Button>
           </>
         }
       >
         <form id="notice-form" className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <FormField id="title" label="제목" required error={errors.title?.message}>
-            <input
-              id="title"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...register('title')}
-            />
+            <Input id="title" {...register('title')} />
           </FormField>
           <FormField id="content" label="내용" required error={errors.content?.message}>
             <NoticeEditor value={contentValue} onChange={(value) => setValue('content', value)} />
           </FormField>
           <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+            <label className="flex items-center gap-2 text-foreground">
               <input type="checkbox" {...register('is_important')} /> 중요 공지
             </label>
-            <label className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+            <label className="flex items-center gap-2 text-foreground">
               <input type="checkbox" {...register('is_visible')} /> 공개
             </label>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <FormField id="start_date" label="게시 시작일">
-              <input
-                id="start_date"
-                type="date"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('start_date')}
-              />
+              <Input id="start_date" type="date" {...register('start_date')} />
             </FormField>
             <FormField id="end_date" label="게시 종료일">
-              <input
-                id="end_date"
-                type="date"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('end_date')}
-              />
+              <Input id="end_date" type="date" {...register('end_date')} />
             </FormField>
           </div>
         </form>
       </Modal>
 
-      <Modal
-        open={previewOpen}
-        title="미리보기"
-        description="현재 작성 중인 내용 화면입니다."
-        onClose={() => setPreviewOpen(false)}
-      >
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 text-xs text-slate-400">공지내용</div>
-          <div
-            className="prose max-w-none text-sm"
-            dangerouslySetInnerHTML={{ __html: previewContent }}
-          />
+      <Modal open={previewOpen} title="미리보기" description="현재 작성 중인 내용 화면입니다." onClose={() => setPreviewOpen(false)}>
+        <div className="rounded-xl border border-border bg-card p-4 text-sm">
+          <div className="mb-2 text-xs text-muted-foreground">공지내용</div>
+          <div className="prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: previewContent }} />
         </div>
       </Modal>
 
@@ -409,15 +326,8 @@ const NoticePage = () => {
         title="공지사항 삭제"
         description="삭제하시겠습니까?"
         confirmLabel="삭제"
-        onClose={() => {
-          setConfirmOpen(false);
-          setDeleteTarget(null);
-        }}
-        onConfirm={() => {
-          if (deleteTarget) {
-            deleteMutation.mutate(deleteTarget.notice_id);
-          }
-        }}
+        onClose={() => { setConfirmOpen(false); setDeleteTarget(null); }}
+        onConfirm={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget.notice_id); } }}
       />
     </DashboardLayout>
   );

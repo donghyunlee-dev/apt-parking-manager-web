@@ -1,4 +1,8 @@
-import type { ChangeEvent, FormEvent, ReactNode } from 'react';
+import { type ChangeEvent, type FormEvent, type ReactNode, useState } from 'react';
+import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Input } from '@/shared/components/ui/Input';
+import { Button } from '@/shared/components/ui/Button';
 
 interface SearchBarProps {
   value: string;
@@ -23,6 +27,8 @@ const SearchBar = ({
   filterTitle = '검색 조건',
   actionTitle = '작업',
 }: SearchBarProps) => {
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit();
@@ -33,47 +39,58 @@ const SearchBar = ({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-[#24314a] dark:bg-[#0b162c]"
-    >
+    <form onSubmit={handleSubmit} className="grid gap-4 rounded-xl border border-border bg-card p-4">
       <div className="grid gap-2 lg:grid-cols-[96px_1fr_auto] lg:items-center">
-        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {searchTitle}
         </div>
-        <input
+        <Input
           value={value}
           onChange={handleChange}
           placeholder={placeholder ?? '검색어를 입력하세요'}
-          className="h-10 rounded-md border border-slate-300 bg-slate-50 px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-400 dark:border-[#2a3a5b] dark:bg-[#081226] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#7a83ff]"
+          icon={<Search size={14} aria-hidden="true" />}
         />
-        <button
-          type="submit"
-          className="h-10 rounded-md bg-indigo-500 px-4 text-sm font-semibold text-white transition hover:bg-indigo-400 dark:bg-[#7f86f8] dark:text-[#11162c] dark:hover:bg-[#979dff]"
-        >
+        <Button type="submit" size="md">
           검색
-        </button>
+        </Button>
       </div>
 
       {(filters || actions) && (
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+        <>
+          {/* Mobile filter toggle */}
           {filters && (
-            <div className="grid gap-2 lg:grid-cols-[96px_1fr] lg:items-center">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                {filterTitle}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">{filters}</div>
-            </div>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+            >
+              {filtersExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {filterTitle} {filtersExpanded ? '접기' : '펼치기'}
+            </button>
           )}
-          {actions && (
-            <div className="grid gap-2 lg:grid-cols-[64px_1fr] lg:items-center lg:justify-self-end">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                {actionTitle}
+
+          <div className={cn(
+            'grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start',
+            !filtersExpanded && 'hidden lg:grid'
+          )}>
+            {filters && (
+              <div className="grid gap-2 lg:grid-cols-[96px_1fr] lg:items-center">
+                <div className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground lg:block">
+                  {filterTitle}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">{filters}</div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">{actions}</div>
-            </div>
-          )}
-        </div>
+            )}
+            {actions && (
+              <div className="grid gap-2 lg:grid-cols-[64px_1fr] lg:items-center lg:justify-self-end">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {actionTitle}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 lg:justify-end">{actions}</div>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </form>
   );
