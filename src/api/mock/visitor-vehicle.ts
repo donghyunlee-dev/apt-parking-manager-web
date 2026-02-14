@@ -24,7 +24,23 @@ const createVisitor = (index: number): VisitorVehicle => {
   };
 };
 
-let visitors: VisitorVehicle[] = Array.from({ length: 30 }, (_, idx) => createVisitor(idx));
+let visitors: VisitorVehicle[] = [
+  {
+    visitor_id: 'VST-TEST-001',
+    apt_code: 'A0001',
+    building: '102',
+    unit: '1302',
+    vehicle_number: '34나5678',
+    visitor_phone: '010-3333-4444',
+    visit_start_date: formatDate(today),
+    visit_end_date: formatDate(addDays(today, 3)),
+    status: 'active',
+    visit_count: 2,
+    updated_at: formatDate(today),
+    created_at: formatDate(today),
+  },
+  ...Array.from({ length: 30 }, (_, idx) => createVisitor(idx)),
+];
 
 const history: VisitHistory[] = Array.from({ length: 100 }, (_, idx) => ({
   history_id: `HIS-${String(idx + 1).padStart(4, '0')}`,
@@ -80,7 +96,10 @@ export const visitorVehicleHandlers = [
     });
   }),
   http.post('/api/visitor-vehicles', async ({ request }) => {
-    const payload = (await request.json()) as Omit<VisitorVehicle, 'visitor_id' | 'apt_code' | 'status' | 'visit_count' | 'updated_at' | 'created_at'>;
+    const payload = (await request.json()) as Omit<
+      VisitorVehicle,
+      'visitor_id' | 'apt_code' | 'status' | 'visit_count' | 'updated_at' | 'created_at'
+    >;
     const endDate = new Date(payload.visit_end_date);
     const visitor: VisitorVehicle = {
       visitor_id: `VST-${String(visitors.length + 1).padStart(3, '0')}`,
@@ -92,7 +111,10 @@ export const visitorVehicleHandlers = [
       ...payload,
     };
     visitors = [visitor, ...visitors];
-    return HttpResponse.json({ success: true, data: { visitor_id: visitor.visitor_id } }, { status: 201 });
+    return HttpResponse.json(
+      { success: true, data: { visitor_id: visitor.visitor_id } },
+      { status: 201 },
+    );
   }),
   http.put('/api/visitor-vehicles/:id', async ({ params, request }) => {
     const { id } = params as { id: string };
@@ -102,7 +124,10 @@ export const visitorVehicleHandlers = [
         ? {
             ...item,
             ...payload,
-            status: new Date(payload.visit_end_date ?? item.visit_end_date) < new Date() ? 'expired' : 'active',
+            status:
+              new Date(payload.visit_end_date ?? item.visit_end_date) < new Date()
+                ? 'expired'
+                : 'active',
             updated_at: formatDate(today),
           }
         : item,

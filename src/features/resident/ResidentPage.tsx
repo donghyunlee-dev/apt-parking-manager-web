@@ -5,14 +5,15 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
+import DataTable from '@/shared/components/table/DataTable';
 import * as XLSX from 'xlsx';
 import Modal from '@/shared/components/feedback/Modal';
+import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
-import EmptyState from '@/shared/components/feedback/EmptyState';
 import Skeleton from '@/shared/components/feedback/Skeleton';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
-import type { ResidentVehicle } from './types';
+import type { ResidentVehicle, ResidentVehicleListResponse } from './types';
 import {
   bulkUploadResidentVehicles,
   createResidentVehicle,
@@ -21,7 +22,6 @@ import {
   fetchResidentVehicles,
   updateResidentVehicle,
 } from './api';
-import ResidentTable from './ResidentTable';
 import { vehicleNumberRegex } from './utils';
 
 const navItems = [
@@ -55,8 +55,14 @@ const ResidentPage = () => {
   const [editing, setEditing] = useState<ResidentVehicle | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
-  const [bulkResult, setBulkResult] = useState<{ total: number; success: number; failed: number } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{
+    total: number;
+    success: number;
+    failed: number;
+  } | null>(null);
   const [bulkPreview, setBulkPreview] = useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ResidentVehicle | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -97,9 +103,26 @@ const ResidentPage = () => {
 
   const deleteMutation = useMutation({
     mutationFn: deleteResidentVehicle,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['resident-vehicles'] });
-      pushToast({ type: 'success', message: '입주민 차량을 삭제했습니다.' });
+    onSuccess: (_, vehicleId) => {
+      queryClient.setQueriesData<ResidentVehicleListResponse>(
+        { queryKey: ['resident-vehicles'] },
+        (cached) => {
+          if (!cached) return cached;
+          const nextItems = cached.items.filter((item) => item.vehicle_id !== vehicleId);
+          const removedCount = cached.items.length - nextItems.length;
+
+          if (removedCount === 0) return cached;
+
+          return {
+            ...cached,
+            items: nextItems,
+            total: Math.max(cached.total - removedCount, 0),
+          };
+        },
+      );
+      setConfirmOpen(false);
+      setDeleteTarget(null);
+      pushToast({ type: 'success', message: '삭제되었습니다.' });
     },
     onError: () => pushToast({ type: 'error', message: '삭제에 실패했습니다.' }),
   });
@@ -123,37 +146,6 @@ const ResidentPage = () => {
     resolver: zodResolver(formSchema),
     defaultValues: { building: '', unit: '', vehicle_number: '', phone_number: '' },
   });
-
-  const totalPages = data ? Math.ceil(data.total / 10) : 1;
-
-  const renderPagination = () => {
-    if (!data) return null;
-    return (
-      <div className="flex items-center justify-between border border-t-0 border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-        <span>
-          {data.total}건 중 {(page - 1) * 10 + 1}-{Math.min(page * 10, data.total)}
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2 py-1 dark:border-slate-700"
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-          >
-            이전
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2 py-1 dark:border-slate-700"
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page >= totalPages}
-          >
-            다음
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   const openCreateModal = () => {
     setEditing(null);
@@ -180,6 +172,43 @@ const ResidentPage = () => {
     createMutation.mutate(values);
   };
 
+  const columns = [
+    {
+      id: 'unit',
+      header: '동/호수',
+      accessor: (row: ResidentVehicle) => `${row.building}동 ${row.unit}호`,
+    },
+    { id: 'vehicle', header: '차량번호', accessor: (row: ResidentVehicle) => row.vehicle_number },
+    { id: 'phone', header: '연락처', accessor: (row: ResidentVehicle) => row.phone_number ?? '-' },
+    { id: 'updated', header: '최근 수정', accessor: (row: ResidentVehicle) => row.updated_at },
+    {
+      id: 'actions',
+      header: '관리',
+      align: 'right' as const,
+      cell: (row: ResidentVehicle) => (
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            onClick={() => openEditModal(row)}
+          >
+            수정
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
+            onClick={() => {
+              setDeleteTarget(row);
+              setConfirmOpen(true);
+            }}
+          >
+            삭제
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   const handleBulkUpload = () => {
     if (!bulkFile) {
       pushToast({ type: 'error', message: '업로드할 파일을 선택하세요.' });
@@ -202,15 +231,18 @@ const ResidentPage = () => {
     >
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">입주민 차량 관리</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">입주민 차량 정보를 등록하고 관리합니다.</p>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            입주민 차량 관리
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            입주민 차량 정보를 등록하고 관리합니다.
+          </p>
         </div>
         <SearchBar
           value={search}
           onChange={setSearch}
           onSubmit={() => setPage(1)}
           filterTitle="정렬 조건"
-          actionTitle="등록"
           placeholder="차량번호, 동/호수, 연락처 검색"
           filters={
             <select
@@ -225,25 +257,23 @@ const ResidentPage = () => {
               <option value="building_asc">동/호수 오름차순</option>
             </select>
           }
-          actions={
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
-                onClick={() => setBulkOpen(true)}
-              >
-                일괄 등록
-              </button>
-              <button
-                type="button"
-                className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
-                onClick={openCreateModal}
-              >
-                + 차량 등록
-              </button>
-            </div>
-          }
         />
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            className="h-10 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+            onClick={() => setBulkOpen(true)}
+          >
+            일괄 등록
+          </button>
+          <button
+            type="button"
+            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
+            onClick={openCreateModal}
+          >
+            + 차량 등록
+          </button>
+        </div>
 
         {isLoading ? (
           <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
@@ -252,24 +282,17 @@ const ResidentPage = () => {
             <Skeleton className="mt-2 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-2/3" />
           </div>
-        ) : data && data.items.length > 0 ? (
-          <>
-            <ResidentTable data={data.items} onRowClick={openEditModal} />
-            {renderPagination()}
-          </>
         ) : (
-          <EmptyState
-            title="등록된 입주민 차량이 없습니다."
-            description="새로운 차량을 등록해보세요."
-            action={
-              <button
-                type="button"
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-                onClick={openCreateModal}
-              >
-                차량 등록
-              </button>
-            }
+          <DataTable
+            columns={columns}
+            data={data?.items ?? []}
+            getRowId={(row) => row.vehicle_id}
+            pagination={{
+              page,
+              pageSize: 10,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </div>
@@ -281,20 +304,6 @@ const ResidentPage = () => {
         onClose={() => setModalOpen(false)}
         footer={
           <>
-            {editing && (
-              <button
-                type="button"
-                className="rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 dark:border-rose-500/40 dark:text-rose-200"
-                onClick={() => {
-                  if (window.confirm('차량을 삭제하시겠습니까?')) {
-                    deleteMutation.mutate(editing.vehicle_id);
-                  }
-                }}
-              >
-                삭제
-              </button>
-            )}
-
             <button
               type="submit"
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
@@ -322,7 +331,12 @@ const ResidentPage = () => {
               />
             </FormField>
           </div>
-          <FormField id="vehicle_number" label="차량번호" required error={errors.vehicle_number?.message}>
+          <FormField
+            id="vehicle_number"
+            label="차량번호"
+            required
+            error={errors.vehicle_number?.message}
+          >
             <input
               id="vehicle_number"
               className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
@@ -390,19 +404,41 @@ const ResidentPage = () => {
             }}
           />
           {bulkFile && (
-            <p className="text-sm text-slate-600 dark:text-slate-300">선택한 파일: {bulkFile.name}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              선택한 파일: {bulkFile.name}
+            </p>
           )}
           {bulkPreview !== null && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">예상 업로드 건수: {bulkPreview}건</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              예상 업로드 건수: {bulkPreview}건
+            </p>
           )}
           {bulkResult && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-              <p>총 {bulkResult.total}건 중 성공 {bulkResult.success}건</p>
+              <p>
+                총 {bulkResult.total}건 중 성공 {bulkResult.success}건
+              </p>
               <p>실패 {bulkResult.failed}건</p>
             </div>
           )}
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="입주민 차량 삭제"
+        description="삭제하시겠습니까?"
+        confirmLabel="삭제"
+        onClose={() => {
+          setConfirmOpen(false);
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.vehicle_id);
+          }
+        }}
+      />
     </DashboardLayout>
   );
 };

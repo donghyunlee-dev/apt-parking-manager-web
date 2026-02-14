@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
+import DataTable from '@/shared/components/table/DataTable';
 import StatusBadge from '@/shared/components/feedback/StatusBadge';
 import Modal from '@/shared/components/feedback/Modal';
+import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
-import EmptyState from '@/shared/components/feedback/EmptyState';
 import Skeleton from '@/shared/components/feedback/Skeleton';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
-import type { Notice } from './types';
+import type { Notice, NoticeListResponse } from './types';
 import {
   createNotice,
   deleteNotice,
@@ -56,8 +57,8 @@ const NoticePage = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editing, setEditing] = useState<Notice | null>(null);
   const [previewContent, setPreviewContent] = useState('');
-  const [orderedNotices, setOrderedNotices] = useState<Notice[]>([]);
-  const [dragId, setDragId] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Notice | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -73,12 +74,6 @@ const NoticePage = () => {
         pageSize: 10,
       }),
   });
-
-  const filteredNotices = useMemo(() => data?.items ?? [], [data]);
-
-  useEffect(() => {
-    setOrderedNotices(filteredNotices);
-  }, [filteredNotices]);
 
   const createMutation = useMutation({
     mutationFn: createNotice,
@@ -102,9 +97,22 @@ const NoticePage = () => {
 
   const deleteMutation = useMutation({
     mutationFn: deleteNotice,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notices'] });
-      pushToast({ type: 'success', message: '공지사항을 삭제했습니다.' });
+    onSuccess: (_, noticeId) => {
+      queryClient.setQueriesData<NoticeListResponse>({ queryKey: ['notices'] }, (cached) => {
+        if (!cached) return cached;
+        const nextItems = cached.items.filter((item) => item.notice_id !== noticeId);
+        const removedCount = cached.items.length - nextItems.length;
+        if (removedCount === 0) return cached;
+
+        return {
+          ...cached,
+          items: nextItems,
+          total: Math.max(cached.total - removedCount, 0),
+        };
+      });
+      setConfirmOpen(false);
+      setDeleteTarget(null);
+      pushToast({ type: 'success', message: '삭제되었습니다.' });
     },
     onError: () => pushToast({ type: 'error', message: '삭제에 실패했습니다.' }),
   });
@@ -138,46 +146,58 @@ const NoticePage = () => {
 
   const contentValue = watch('content');
 
-  const columns = useMemo(
-    () => [
-      { id: 'title', header: '제목', accessor: (row: Notice) => row.title },
-      {
-        id: 'important',
-        header: '중요',
-        cell: (row: Notice) =>
-          row.is_important ? <StatusBadge label="중요" variant="warning" /> : '-',
-      },
-      {
-        id: 'visible',
-        header: '공개',
-        cell: (row: Notice) => (
+  const columns = [
+    { id: 'title', header: '제목', accessor: (row: Notice) => row.title },
+    {
+      id: 'important',
+      header: '중요',
+      cell: (row: Notice) =>
+        row.is_important ? <StatusBadge label="중요" variant="warning" /> : '-',
+    },
+    {
+      id: 'visible',
+      header: '공개',
+      cell: (row: Notice) => (
+        <button
+          type="button"
+          className="rounded-md border border-slate-200 px-2 py-1 text-xs dark:border-slate-700 dark:text-slate-200"
+          onClick={(event) => {
+            event.stopPropagation();
+            visibilityMutation.mutate({ id: row.notice_id, visible: !row.is_visible });
+          }}
+        >
+          {row.is_visible ? 'ON' : 'OFF'}
+        </button>
+      ),
+    },
+    { id: 'date', header: '등록일', accessor: (row: Notice) => row.created_at },
+    {
+      id: 'actions',
+      header: '관리',
+      align: 'right' as const,
+      cell: (row: Notice) => (
+        <div className="flex justify-end gap-2">
           <button
             type="button"
-            className="rounded-md border border-slate-200 px-2 py-1 text-xs dark:border-slate-700 dark:text-slate-200"
-            onClick={(event) => {
-              event.stopPropagation();
-              visibilityMutation.mutate({ id: row.notice_id, visible: !row.is_visible });
+            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            onClick={() => openEditModal(row)}
+          >
+            수정
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
+            onClick={() => {
+              setDeleteTarget(row);
+              setConfirmOpen(true);
             }}
           >
-            {row.is_visible ? 'ON' : 'OFF'}
+            삭제
           </button>
-        ),
-      },
-      { id: 'date', header: '등록일', accessor: (row: Notice) => row.created_at },
-    ],
-    [visibilityMutation],
-  );
-
-  const handleDrop = (targetId: string) => {
-    if (!dragId || dragId === targetId) return;
-    const current = [...orderedNotices];
-    const fromIndex = current.findIndex((item) => item.notice_id === dragId);
-    const toIndex = current.findIndex((item) => item.notice_id === targetId);
-    if (fromIndex < 0 || toIndex < 0) return;
-    const [moved] = current.splice(fromIndex, 1);
-    current.splice(toIndex, 0, moved);
-    setOrderedNotices(current);
-  };
+        </div>
+      ),
+    },
+  ];
 
   const openCreateModal = () => {
     setEditing(null);
@@ -228,15 +248,18 @@ const NoticePage = () => {
     >
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">공지사항 관리</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">공지사항을 작성하고 노출 상태를 관리합니다.</p>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            공지사항 관리
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            공지사항을 작성하고 노출 상태를 관리합니다.
+          </p>
         </div>
         <SearchBar
           value={search}
           onChange={setSearch}
           onSubmit={() => setPage(1)}
           filterTitle="노출 조건"
-          actionTitle="등록"
           placeholder="공지사항 검색"
           filters={
             <div className="flex flex-wrap gap-2">
@@ -266,16 +289,16 @@ const NoticePage = () => {
               </select>
             </div>
           }
-          actions={
-            <button
-              type="button"
-              className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
-              onClick={openCreateModal}
-            >
-              + 공지 등록
-            </button>
-          }
         />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
+            onClick={openCreateModal}
+          >
+            + 공지 등록
+          </button>
+        </div>
 
         {isLoading ? (
           <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
@@ -284,62 +307,17 @@ const NoticePage = () => {
             <Skeleton className="mt-2 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-2/3" />
           </div>
-        ) : orderedNotices.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-            <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-              <thead className="bg-slate-50 dark:bg-slate-800">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    순서
-                  </th>
-                  {columns.map((column) => (
-                    <th
-                      key={column.id}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                    >
-                      {column.header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {orderedNotices.map((row) => (
-                  <tr
-                    key={row.notice_id}
-                    draggable
-                    onDragStart={() => setDragId(row.notice_id)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => handleDrop(row.notice_id)}
-                    className="cursor-move transition hover:bg-slate-50 dark:hover:bg-slate-800"
-                    onClick={() => openEditModal(row)}
-                  >
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">::</td>
-                    {columns.map((column) => (
-                      <td key={column.id} className="px-4 py-3 text-slate-700 dark:text-slate-200">
-                        {column.cell ? column.cell(row) : column.accessor?.(row)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              드래그로 표시 순서를 바꿀 수 있습니다. (저장 기능은 없음)
-            </div>
-          </div>
         ) : (
-          <EmptyState
-            title="공지사항이 없습니다."
-            description="새로운 공지사항을 등록해보세요."
-            action={
-              <button
-                type="button"
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-                onClick={openCreateModal}
-              >
-                공지 등록
-              </button>
-            }
+          <DataTable
+            columns={columns}
+            data={data?.items ?? []}
+            getRowId={(row) => row.notice_id}
+            pagination={{
+              page,
+              pageSize: 10,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </div>
@@ -351,20 +329,6 @@ const NoticePage = () => {
         onClose={() => setModalOpen(false)}
         footer={
           <>
-            {editing && (
-              <button
-                type="button"
-                className="rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 dark:border-rose-500/40 dark:text-rose-200"
-                onClick={() => {
-                  if (window.confirm('공지를 삭제하시겠습니까?')) {
-                    deleteMutation.mutate(editing.notice_id);
-                  }
-                }}
-              >
-                삭제
-              </button>
-            )}
-
             <button
               type="submit"
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
@@ -439,6 +403,22 @@ const NoticePage = () => {
           />
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="공지사항 삭제"
+        description="삭제하시겠습니까?"
+        confirmLabel="삭제"
+        onClose={() => {
+          setConfirmOpen(false);
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.notice_id);
+          }
+        }}
+      />
     </DashboardLayout>
   );
 };

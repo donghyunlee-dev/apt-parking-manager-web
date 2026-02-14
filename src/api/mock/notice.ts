@@ -19,7 +19,23 @@ const createNotice = (index: number): Notice => ({
   created_at: formatDate(today),
 });
 
-let notices: Notice[] = Array.from({ length: 15 }, (_, idx) => createNotice(idx));
+let notices: Notice[] = [
+  {
+    notice_id: 'NTC-TEST-001',
+    apt_code: 'A0001',
+    title: '테스트 공지사항',
+    content: '<p>테스트용 공지입니다.</p>',
+    is_important: true,
+    is_visible: true,
+    start_date: formatDate(today),
+    end_date: formatDate(new Date(today.getTime() + 3 * 86400000)),
+    view_count: 0,
+    created_by: '관리자',
+    updated_at: formatDate(today),
+    created_at: formatDate(today),
+  },
+  ...Array.from({ length: 15 }, (_, idx) => createNotice(idx)),
+];
 
 export const noticeHandlers = [
   http.get('/api/notices', ({ request }) => {
@@ -48,7 +64,10 @@ export const noticeHandlers = [
     return HttpResponse.json({ success: true, data: { items, total } });
   }),
   http.post('/api/notices', async ({ request }) => {
-    const payload = (await request.json()) as Omit<Notice, 'notice_id' | 'apt_code' | 'view_count' | 'created_by' | 'updated_at' | 'created_at'>;
+    const payload = (await request.json()) as Omit<
+      Notice,
+      'notice_id' | 'apt_code' | 'view_count' | 'created_by' | 'updated_at' | 'created_at'
+    >;
     const notice: Notice = {
       notice_id: `NTC-${String(notices.length + 1).padStart(3, '0')}`,
       apt_code: 'A0001',
@@ -59,15 +78,16 @@ export const noticeHandlers = [
       ...payload,
     };
     notices = [notice, ...notices];
-    return HttpResponse.json({ success: true, data: { notice_id: notice.notice_id } }, { status: 201 });
+    return HttpResponse.json(
+      { success: true, data: { notice_id: notice.notice_id } },
+      { status: 201 },
+    );
   }),
   http.put('/api/notices/:id', async ({ params, request }) => {
     const { id } = params as { id: string };
     const payload = (await request.json()) as Partial<Notice>;
     notices = notices.map((item) =>
-      item.notice_id === id
-        ? { ...item, ...payload, updated_at: formatDate(today) }
-        : item,
+      item.notice_id === id ? { ...item, ...payload, updated_at: formatDate(today) } : item,
     );
     return HttpResponse.json({ success: true });
   }),

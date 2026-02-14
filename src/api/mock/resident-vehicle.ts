@@ -15,7 +15,20 @@ const createSample = (index: number): ResidentVehicle => ({
   created_at: now(),
 });
 
-let vehicles: ResidentVehicle[] = Array.from({ length: 50 }, (_, idx) => createSample(idx));
+let vehicles: ResidentVehicle[] = [
+  {
+    vehicle_id: 'RSV-TEST-001',
+    apt_code: 'A0001',
+    building: '101',
+    unit: '1201',
+    vehicle_number: '12가3456',
+    phone_number: '010-1111-2222',
+    image_url: '',
+    updated_at: now(),
+    created_at: now(),
+  },
+  ...Array.from({ length: 50 }, (_, idx) => createSample(idx)),
+];
 
 const applySort = (items: ResidentVehicle[], sort?: string) => {
   if (sort === 'building_asc') {
@@ -63,7 +76,10 @@ export const residentVehicleHandlers = [
     });
   }),
   http.post('/api/resident-vehicles', async ({ request }) => {
-    const payload = (await request.json()) as Omit<ResidentVehicle, 'vehicle_id' | 'apt_code' | 'updated_at' | 'created_at'>;
+    const payload = (await request.json()) as Omit<
+      ResidentVehicle,
+      'vehicle_id' | 'apt_code' | 'updated_at' | 'created_at'
+    >;
     const vehicle: ResidentVehicle = {
       vehicle_id: `RSV-${String(vehicles.length + 1).padStart(4, '0')}`,
       apt_code: 'A0001',
@@ -72,7 +88,10 @@ export const residentVehicleHandlers = [
       ...payload,
     };
     vehicles = [vehicle, ...vehicles];
-    return HttpResponse.json({ success: true, data: { vehicle_id: vehicle.vehicle_id } }, { status: 201 });
+    return HttpResponse.json(
+      { success: true, data: { vehicle_id: vehicle.vehicle_id } },
+      { status: 201 },
+    );
   }),
   http.post('/api/resident-vehicles/bulk', async () => {
     const total = 20;
@@ -84,9 +103,7 @@ export const residentVehicleHandlers = [
     const { id } = params as { id: string };
     const payload = (await request.json()) as Partial<ResidentVehicle>;
     vehicles = vehicles.map((item) =>
-      item.vehicle_id === id
-        ? { ...item, ...payload, updated_at: now() }
-        : item,
+      item.vehicle_id === id ? { ...item, ...payload, updated_at: now() } : item,
     );
     return HttpResponse.json({ success: true });
   }),
