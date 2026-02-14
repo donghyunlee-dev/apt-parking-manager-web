@@ -14,9 +14,12 @@ export interface ToastMessage {
 
 interface UiState {
   sidebarOpen: boolean;
+  mobileMenuOpen: boolean;
   modalState: ModalState;
   toastMessages: ToastMessage[];
   toggleSidebar: () => void;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
   openModal: (type: string, payload?: Record<string, unknown>) => void;
   closeModal: () => void;
   pushToast: (message: Omit<ToastMessage, 'id'>) => void;
@@ -25,9 +28,12 @@ interface UiState {
 
 const useUiStore = create<UiState>((set) => ({
   sidebarOpen: true,
+  mobileMenuOpen: false,
   modalState: { open: false },
   toastMessages: [],
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleMobileMenu: () => set((state) => ({ mobileMenuOpen: !state.mobileMenuOpen })),
+  closeMobileMenu: () => set({ mobileMenuOpen: false }),
   openModal: (type, payload) => set({ modalState: { open: true, type, payload } }),
   closeModal: () => set({ modalState: { open: false } }),
   pushToast: (message) =>

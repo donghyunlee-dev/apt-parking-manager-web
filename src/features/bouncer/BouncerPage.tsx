@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Plus } from 'lucide-react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import DataTable from '@/shared/components/table/DataTable';
 import SearchBar from '@/shared/components/form/SearchBar';
@@ -11,6 +12,9 @@ import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
 import StatusBadge from '@/shared/components/feedback/StatusBadge';
 import Skeleton from '@/shared/components/feedback/Skeleton';
+import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
+import { Select } from '@/shared/components/ui/Select';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
 import {
@@ -23,14 +27,6 @@ import {
 import type { Bouncer, BouncerListResponse } from './types';
 import { maskFin } from './utils';
 
-const navItems = [
-  { label: '대시보드', to: '/dashboard' },
-  { label: '경비원 관리', to: '/bouncers' },
-  { label: '입주민 차량 관리', to: '/residents' },
-  { label: '방문 차량 관리', to: '/visitors' },
-  { label: '차량 조회', to: '/reports' },
-  { label: '공지사항 관리', to: '/notices' },
-];
 
 const createSchema = z
   .object({
@@ -336,20 +332,12 @@ const BouncerPage = () => {
       align: 'right' as const,
       cell: (row: Bouncer) => (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            onClick={() => openEditModal(row)}
-          >
+          <Button variant="outline" size="sm" onClick={() => openEditModal(row)}>
             수정
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
-            onClick={() => handleOpenDeleteConfirm(row)}
-          >
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => handleOpenDeleteConfirm(row)}>
             삭제
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -359,15 +347,20 @@ const BouncerPage = () => {
     <DashboardLayout
       apartmentName={apartmentName}
       userName={userName}
-      navItems={navItems}
       onLogout={logout}
     >
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">경비원 관리</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            경비원 계정을 등록하고 사용 여부를 관리합니다.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">경비원 관리</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              경비원 계정을 등록하고 사용 여부를 관리합니다.
+            </p>
+          </div>
+          <Button onClick={openCreateModal}>
+            <Plus size={16} aria-hidden="true" />
+            경비원 등록
+          </Button>
         </div>
 
         <SearchBar
@@ -377,33 +370,23 @@ const BouncerPage = () => {
           filterTitle="사용 여부"
           placeholder="경비원 이름으로 검색"
           filters={
-            <select
+            <Select
               value={filterUsed}
               onChange={(event) => {
                 setFilterUsed(event.target.value as 'Y' | 'N' | '');
                 setPage(1);
               }}
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              className="w-auto"
             >
               <option value="">전체</option>
               <option value="Y">사용 중</option>
               <option value="N">사용 안함</option>
-            </select>
+            </Select>
           }
         />
 
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
-            onClick={openCreateModal}
-          >
-            + 경비원 등록
-          </button>
-        </div>
-
         {isLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-xl border border-border bg-card p-6">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="mt-4 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-full" />
@@ -430,13 +413,7 @@ const BouncerPage = () => {
         description="FIN 번호는 6자리 숫자입니다."
         onClose={() => setCreateModalOpen(false)}
         footer={
-          <button
-            type="submit"
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-            form="bouncer-create-form"
-          >
-            등록
-          </button>
+          <Button type="submit" form="bouncer-create-form">등록</Button>
         }
       >
         <form
@@ -444,22 +421,26 @@ const BouncerPage = () => {
           className="flex flex-col gap-4"
           onSubmit={handleSubmitCreate(onSubmitCreate)}
         >
-          <FormField
-            id="create_bouncer_name"
-            label="경비원명"
-            required
-            error={createErrors.bouncer_name?.message}
-          >
-            <input
-              id="create_bouncer_name"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...registerCreate('bouncer_name')}
-            />
+          <FormField id="create_bouncer_name" label="경비원명" required error={createErrors.bouncer_name?.message}>
+            <Input id="create_bouncer_name" {...registerCreate('bouncer_name')} />
+          </FormField>
+
+          <FormField id="create_fin_no" label="FIN 번호" required error={createErrors.fin_no?.message}>
+            <Input id="create_fin_no" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+              {...registerCreate('fin_no', { onChange: () => setCreateFinVerified(false) })} />
+          </FormField>
+
+          <FormField id="create_fin_no_confirm" label="FIN 번호 확인" required error={createErrors.fin_no_confirm?.message}>
+            <div className="flex gap-2">
+              <Input id="create_fin_no_confirm" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+                {...registerCreate('fin_no_confirm', { onChange: () => setCreateFinVerified(false) })} />
+              <Button type="button" variant="outline" onClick={handleCreateFinCheck}>확인</Button>
+            </div>
           </FormField>
 
           <FormField
             id="create_fin_no"
-            label="FIN 번호"
+            label="FIN ��호"
             required
             error={createErrors.fin_no?.message}
           >
@@ -514,104 +495,37 @@ const BouncerPage = () => {
           setEditing(null);
         }}
         footer={
-          <button
-            type="submit"
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-            form="bouncer-edit-form"
-          >
-            수정
-          </button>
+          <Button type="submit" form="bouncer-edit-form">수정</Button>
         }
       >
-        <form
-          id="bouncer-edit-form"
-          className="flex flex-col gap-4"
-          onSubmit={handleSubmitEdit(onSubmitEdit)}
-        >
-          <FormField
-            id="edit_bouncer_name"
-            label="경비원명"
-            required
-            error={editErrors.bouncer_name?.message}
-          >
-            <input
-              id="edit_bouncer_name"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...registerEdit('bouncer_name')}
-            />
+        <form id="bouncer-edit-form" className="flex flex-col gap-4" onSubmit={handleSubmitEdit(onSubmitEdit)}>
+          <FormField id="edit_bouncer_name" label="경비원명" required error={editErrors.bouncer_name?.message}>
+            <Input id="edit_bouncer_name" {...registerEdit('bouncer_name')} />
           </FormField>
 
-          <FormField
-            id="current_fin_no"
-            label="현재 FIN 번호"
-            required
-            error={editErrors.current_fin_no?.message}
-          >
-            <input
-              id="current_fin_no"
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              autoComplete="off"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...registerEdit('current_fin_no', { onChange: () => setEditFinVerified(false) })}
-            />
+          <FormField id="current_fin_no" label="현재 FIN 번호" required error={editErrors.current_fin_no?.message}>
+            <Input id="current_fin_no" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+              {...registerEdit('current_fin_no', { onChange: () => setEditFinVerified(false) })} />
           </FormField>
 
-          <FormField
-            id="new_fin_no"
-            label="변경 FIN 번호"
-            required
-            error={editErrors.new_fin_no?.message}
-          >
-            <input
-              id="new_fin_no"
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              autoComplete="off"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...registerEdit('new_fin_no', { onChange: () => setEditFinVerified(false) })}
-            />
+          <FormField id="new_fin_no" label="변경 FIN 번호" required error={editErrors.new_fin_no?.message}>
+            <Input id="new_fin_no" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+              {...registerEdit('new_fin_no', { onChange: () => setEditFinVerified(false) })} />
           </FormField>
 
-          <FormField
-            id="new_fin_no_confirm"
-            label="변경 FIN 번호 확인"
-            required
-            error={editErrors.new_fin_no_confirm?.message}
-          >
+          <FormField id="new_fin_no_confirm" label="변경 FIN 번호 확인" required error={editErrors.new_fin_no_confirm?.message}>
             <div className="flex gap-2">
-              <input
-                id="new_fin_no_confirm"
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                autoComplete="off"
-                className="h-10 flex-1 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...registerEdit('new_fin_no_confirm', {
-                  onChange: () => setEditFinVerified(false),
-                })}
-              />
-              <button
-                type="button"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:text-slate-200"
-                onClick={handleEditFinCheck}
-              >
-                확인
-              </button>
+              <Input id="new_fin_no_confirm" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
+                {...registerEdit('new_fin_no_confirm', { onChange: () => setEditFinVerified(false) })} />
+              <Button type="button" variant="outline" onClick={handleEditFinCheck}>확인</Button>
             </div>
           </FormField>
 
           <FormField id="edit_used" label="사용 여부">
-            <select
-              id="edit_used"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...registerEdit('used')}
-            >
+            <Select id="edit_used" {...registerEdit('used')}>
               <option value="Y">사용</option>
               <option value="N">미사용</option>
-            </select>
+            </Select>
           </FormField>
         </form>
       </Modal>

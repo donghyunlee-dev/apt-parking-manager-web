@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface DataTableColumn<T> {
@@ -40,89 +41,142 @@ const DataTable = <T,>({
   selectedRowIds,
   pagination,
   emptyMessage = '데이터가 없습니다.',
-}: DataTableProps<T>) => (
-  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-[#24314a] dark:bg-[#0b162c]">
-    <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-[#24314a]">
-      <thead className="bg-slate-50 dark:bg-[#081226]">
-        <tr>
-          {columns.map((column) => (
-            <th
-              key={column.id}
-              className={cn(
-                'px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#8ea0c7]',
-                alignClass(column.align),
-              )}
-            >
-              {column.header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-[#1b2945]">
-        {data.map((row) => {
-          const rowId = getRowId(row);
-          const isSelected = selectedRowIds?.includes(rowId);
+}: DataTableProps<T>) => {
+  const totalPages = pagination ? Math.ceil(pagination.total / pagination.pageSize) : 0;
 
-          return (
-            <tr
-              key={rowId}
-              className={cn(
-                'transition hover:bg-slate-50 dark:hover:bg-[#111f3a]',
-                onRowClick && 'cursor-pointer',
-                isSelected && 'bg-slate-100 dark:bg-[#192846]',
-              )}
-              onClick={() => onRowClick?.(row)}
-            >
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+    const pages: (number | 'ellipsis')[] = [];
+    const current = pagination.page;
+    const total = totalPages;
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (current > 3) pages.push('ellipsis');
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 2) pages.push('ellipsis');
+      pages.push(total);
+    }
+    return pages;
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-border text-sm">
+          <thead className="bg-muted/50">
+            <tr>
               {columns.map((column) => (
-                <td
+                <th
                   key={column.id}
-                  className={cn('px-4 py-3 text-slate-700 dark:text-slate-200', alignClass(column.align))}
+                  className={cn(
+                    'px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+                    alignClass(column.align),
+                  )}
                 >
-                  {column.cell?.(row) ?? column.accessor?.(row)}
-                </td>
+                  {column.header}
+                </th>
               ))}
             </tr>
-          );
-        })}
-      </tbody>
-    </table>
-    {data.length === 0 && (
-      <div className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">{emptyMessage}</div>
-    )}
-    {pagination && (
-      <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-[#24314a] dark:text-slate-300">
-        <span>
-          {pagination.total}개 중 {(pagination.page - 1) * pagination.pageSize + 1}-
-          {Math.min(pagination.page * pagination.pageSize, pagination.total)}
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-300 px-2 py-1 text-slate-700 disabled:opacity-40 dark:border-[#2a3a5b] dark:text-slate-200"
-            onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
-            disabled={pagination.page === 1}
-          >
-            이전
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-slate-300 px-2 py-1 text-slate-700 disabled:opacity-40 dark:border-[#2a3a5b] dark:text-slate-200"
-            onClick={() =>
-              pagination.onPageChange(
-                Math.min(
-                  Math.ceil(pagination.total / pagination.pageSize),
-                  pagination.page + 1,
-                ),
-              )
-            }
-            disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
-          >
-            다음
-          </button>
-        </div>
+          </thead>
+          <tbody className="divide-y divide-border/50">
+            {data.map((row) => {
+              const rowId = getRowId(row);
+              const isSelected = selectedRowIds?.includes(rowId);
+
+              return (
+                <tr
+                  key={rowId}
+                  className={cn(
+                    'transition-colors hover:bg-muted/40',
+                    onRowClick && 'cursor-pointer',
+                    isSelected && 'bg-primary/5',
+                  )}
+                  onClick={() => onRowClick?.(row)}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.id}
+                      className={cn('px-4 py-3 text-foreground', alignClass(column.align))}
+                    >
+                      {column.cell?.(row) ?? column.accessor?.(row)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    )}
-  </div>
-);
+
+      {data.length === 0 && (
+        <div className="px-4 py-10 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+      )}
+
+      {pagination && (
+        <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm text-muted-foreground">
+            {pagination.total}개 중{' '}
+            <span className="font-medium text-foreground">
+              {(pagination.page - 1) * pagination.pageSize + 1}-
+              {Math.min(pagination.page * pagination.pageSize, pagination.total)}
+            </span>
+          </span>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
+              onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
+              disabled={pagination.page === 1}
+              aria-label="이전 페이지"
+            >
+              <ChevronLeft size={14} aria-hidden="true" />
+            </button>
+
+            {getPageNumbers().map((page, idx) =>
+              page === 'ellipsis' ? (
+                <span key={`ellipsis-${idx}`} className="px-1 text-sm text-muted-foreground">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={page}
+                  type="button"
+                  className={cn(
+                    'inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm transition-colors',
+                    page === pagination.page
+                      ? 'bg-primary text-primary-foreground font-medium'
+                      : 'border border-border text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )}
+                  onClick={() => pagination.onPageChange(page)}
+                >
+                  {page}
+                </button>
+              ),
+            )}
+
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
+              onClick={() =>
+                pagination.onPageChange(Math.min(totalPages, pagination.page + 1))
+              }
+              disabled={pagination.page >= totalPages}
+              aria-label="다음 페이지"
+            >
+              <ChevronRight size={14} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default DataTable;

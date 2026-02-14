@@ -1,21 +1,17 @@
 import { type MouseEvent, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Car, RefreshCw, RotateCcw, Info } from 'lucide-react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
 import DataTable from '@/shared/components/table/DataTable';
 import EmptyState from '@/shared/components/feedback/EmptyState';
+import { Card, CardContent } from '@/shared/components/ui/Card';
+import { Button } from '@/shared/components/ui/Button';
+import { Badge } from '@/shared/components/ui/Badge';
+import { Input } from '@/shared/components/ui/Input';
 import useAuthStore from '@/features/auth/store';
 import { fetchScanLogs, searchVehicle } from './api';
-import type { ScanLog } from './types';
-
-const navItems = [
-  { label: '대시보드', to: '/dashboard' },
-  { label: '경비원 관리', to: '/bouncers' },
-  { label: '입주민 차량 관리', to: '/residents' },
-  { label: '방문 차량 관리', to: '/visitors' },
-  { label: '차량 조회', to: '/reports' },
-  { label: '공지사항 관리', to: '/notices' },
-];
+import type { ScanLog, VehicleSearchResult } from './types';
 
 const vehicleTypeLabel: Record<ScanLog['vehicle_type'], string> = {
   resident: '입주민',
@@ -23,10 +19,10 @@ const vehicleTypeLabel: Record<ScanLog['vehicle_type'], string> = {
   unregistered: '미등록',
 };
 
-const vehicleTypeBadgeClass: Record<ScanLog['vehicle_type'], string> = {
-  resident: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200',
-  visitor: 'border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-200',
-  unregistered: 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200',
+const vehicleTypeBadgeVariant: Record<ScanLog['vehicle_type'], 'success' | 'info' | 'warning'> = {
+  resident: 'success',
+  visitor: 'info',
+  unregistered: 'warning',
 };
 
 const ReportPage = () => {
@@ -51,7 +47,7 @@ const ReportPage = () => {
 
   const [searchResult, setSearchResult] = useState<{
     status: 'idle' | 'loading' | 'done' | 'error';
-    data: unknown | null;
+    data: VehicleSearchResult | null;
   }>({ status: 'idle', data: null });
 
   const handleSearch = async () => {
@@ -59,7 +55,7 @@ const ReportPage = () => {
     setSearchResult({ status: 'loading', data: null });
     try {
       const data = await searchVehicle(searchNumber);
-      setSearchResult({ status: 'done', data });
+      setSearchResult({ status: 'done', data: data as VehicleSearchResult });
     } catch {
       setSearchResult({ status: 'error', data: null });
     }
@@ -74,11 +70,9 @@ const ReportPage = () => {
         id: 'type',
         header: '차량 타입',
         cell: (row: ScanLog) => (
-          <span
-            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${vehicleTypeBadgeClass[row.vehicle_type]}`}
-          >
+          <Badge variant={vehicleTypeBadgeVariant[row.vehicle_type]}>
             {vehicleTypeLabel[row.vehicle_type]}
-          </span>
+          </Badge>
         ),
       },
     ],
@@ -89,44 +83,47 @@ const ReportPage = () => {
     <DashboardLayout
       apartmentName={apartmentName}
       userName={userName}
-      navItems={navItems}
       onLogout={logout}
     >
       <div className="flex flex-col gap-6">
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:border-[#2a3560] dark:bg-[#1c2140] dark:text-[#c0c9ff]">
+        {/* Page header */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">차량 조회</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              차량 번호와 기간 조건으로 조회하고 스캔 로그를 확인합니다.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchNumber('');
+                setSearchResult({ status: 'idle', data: null });
+              }}
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              초기화
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { refetch(); }}
+            >
+              <RefreshCw size={14} aria-hidden="true" />
+              새로고침
+            </Button>
+          </div>
+        </div>
+
+        {/* Info banner */}
+        <div className="flex items-center gap-2 rounded-lg border border-info/20 bg-info/5 px-4 py-3 text-sm text-foreground">
+          <Info size={16} className="shrink-0 text-info" aria-hidden="true" />
           차량 조회 내역은 최근 스캔 데이터 기준으로 갱신됩니다.
         </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-[linear-gradient(110deg,#eef2ff_0%,#ffffff_62%,#eff6ff_100%)] p-6 dark:border-[#24314a] dark:bg-[linear-gradient(110deg,#101f3f_0%,#0b162c_62%,#0a1226_100%)]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">차량 조회</h2>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">차량 번호와 기간 조건으로 조회하고 스캔 로그를 확인합니다.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-[#2f3f61] dark:text-slate-200 dark:hover:bg-[#111e39]"
-                onClick={() => {
-                  setSearchNumber('');
-                  setSearchResult({ status: 'idle', data: null });
-                }}
-              >
-                검색 초기화
-              </button>
-              <button
-                type="button"
-                className="h-10 rounded-md bg-indigo-500 px-4 text-sm font-semibold text-white hover:bg-indigo-400 dark:bg-[#7f86f8] dark:text-[#11162c] dark:hover:bg-[#979dff]"
-                onClick={() => {
-                  refetch();
-                }}
-              >
-                로그 새로고침
-              </button>
-            </div>
-          </div>
-        </section>
-
+        {/* Search bar */}
         <SearchBar
           value={searchNumber}
           onChange={setSearchNumber}
@@ -138,40 +135,91 @@ const ReportPage = () => {
           placeholder="예: 12가3456"
           filters={
             <div className="flex items-center gap-2 whitespace-nowrap">
-              <input
+              <Input
                 type="date"
                 value={scanFrom}
                 onChange={(event) => setScanFrom(event.target.value)}
                 onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 dark:border-[#2a3a5b] dark:bg-[#081226] dark:text-slate-100"
+                className="w-auto"
               />
-              <span className="text-sm text-slate-500 dark:text-slate-400">~</span>
-              <input
+              <span className="text-sm text-muted-foreground">~</span>
+              <Input
                 type="date"
                 value={scanTo}
                 onChange={(event) => setScanTo(event.target.value)}
                 onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 dark:border-[#2a3a5b] dark:bg-[#081226] dark:text-slate-100"
+                className="w-auto"
               />
             </div>
           }
         />
 
+        {/* Search result - structured card instead of JSON */}
         {searchResult.status === 'loading' && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 dark:border-[#24314a] dark:bg-[#0b162c] dark:text-slate-300">조회 중...</div>
-        )}
-        {searchResult.status === 'done' && searchResult.data ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-700 dark:border-[#24314a] dark:bg-[#0b162c] dark:text-slate-200">
-            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Search Result</div>
-            <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 dark:border-[#1e2a43] dark:bg-[#081226] dark:text-slate-200">{JSON.stringify(searchResult.data, null, 2)}</pre>
-          </div>
-        ) : null}
-        {searchResult.status === 'error' && (
-          <div className="rounded-xl border border-rose-300 bg-rose-50 p-6 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200">조회 실패</div>
+          <Card>
+            <CardContent className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              조회 중...
+            </CardContent>
+          </Card>
         )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-[#24314a] dark:bg-[#0b162c]">
-          <div className="mb-3 px-1 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Scan Logs</div>
+        {searchResult.status === 'done' && searchResult.data && (
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Car size={20} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-foreground">{searchResult.data.vehicle_number}</p>
+                  <Badge variant={vehicleTypeBadgeVariant[searchResult.data.vehicle_type]}>
+                    {vehicleTypeLabel[searchResult.data.vehicle_type]}
+                  </Badge>
+                </div>
+              </div>
+
+              {searchResult.data.details && (
+                <div className="mt-4 grid gap-2 rounded-lg border border-border bg-muted/30 p-4 sm:grid-cols-2">
+                  {Object.entries(searchResult.data.details).map(([key, value]) => (
+                    <div key={key} className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">{key}</span>
+                      <span className="text-sm font-medium text-foreground">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {searchResult.data.scan_history && searchResult.data.scan_history.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">최근 스캔 이력</p>
+                  <div className="space-y-1.5">
+                    {searchResult.data.scan_history.slice(0, 5).map((log) => (
+                      <div key={log.log_id} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">{log.scan_date} {log.scan_time}</span>
+                        <Badge variant={vehicleTypeBadgeVariant[log.vehicle_type]} className="text-[10px]">
+                          {vehicleTypeLabel[log.vehicle_type]}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {searchResult.status === 'error' && (
+          <Card className="border-destructive/30">
+            <CardContent className="p-6 text-sm text-destructive">
+              조회 실패 - 차량번호를 확인해주세요.
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Scan logs table */}
+        <div>
+          <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Scan Logs</div>
           {scanLogs && scanLogs.items.length > 0 ? (
             <DataTable
               columns={scanColumns}
@@ -187,7 +235,7 @@ const ReportPage = () => {
           ) : (
             <EmptyState title="스캔 로그가 없습니다." />
           )}
-        </section>
+        </div>
       </div>
     </DashboardLayout>
   );

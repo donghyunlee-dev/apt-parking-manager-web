@@ -12,3 +12,10 @@ export { default as Skeleton } from './feedback/Skeleton';
 export { default as Tooltip } from './feedback/Tooltip';
 export { default as ThemeToggle } from './feedback/ThemeToggle';
 export { default as ToastListener } from './feedback/ToastListener';
+
+// UI primitives
+export { Button } from './ui/Button';
+export { Input } from './ui/Input';
+export { Select } from './ui/Select';
+export { Badge } from './ui/Badge';
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/Card';

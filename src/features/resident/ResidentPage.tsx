@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Plus, Upload } from 'lucide-react';
 import DashboardLayout from '@/shared/components/layout/DashboardLayout';
 import SearchBar from '@/shared/components/form/SearchBar';
 import DataTable from '@/shared/components/table/DataTable';
@@ -11,6 +12,9 @@ import Modal from '@/shared/components/feedback/Modal';
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import FormField from '@/shared/components/form/FormField';
 import Skeleton from '@/shared/components/feedback/Skeleton';
+import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
+import { Select } from '@/shared/components/ui/Select';
 import useAuthStore from '@/features/auth/store';
 import useUiStore from '@/shared/store/uiStore';
 import type { ResidentVehicle, ResidentVehicleListResponse } from './types';
@@ -23,15 +27,6 @@ import {
   updateResidentVehicle,
 } from './api';
 import { vehicleNumberRegex } from './utils';
-
-const navItems = [
-  { label: '대시보드', to: '/dashboard' },
-  { label: '경비원 관리', to: '/bouncers' },
-  { label: '입주민 차량 관리', to: '/residents' },
-  { label: '방문 차량 관리', to: '/visitors' },
-  { label: '차량 조회', to: '/reports' },
-  { label: '공지사항 관리', to: '/notices' },
-];
 
 const formSchema = z.object({
   building: z.string().min(1, '동을 입력하세요.'),
@@ -187,23 +182,8 @@ const ResidentPage = () => {
       align: 'right' as const,
       cell: (row: ResidentVehicle) => (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            onClick={() => openEditModal(row)}
-          >
-            수정
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
-            onClick={() => {
-              setDeleteTarget(row);
-              setConfirmOpen(true);
-            }}
-          >
-            삭제
-          </button>
+          <Button variant="outline" size="sm" onClick={() => openEditModal(row)}>수정</Button>
+          <Button variant="destructive" size="sm" onClick={() => { setDeleteTarget(row); setConfirmOpen(true); }}>삭제</Button>
         </div>
       ),
     },
@@ -226,17 +206,24 @@ const ResidentPage = () => {
     <DashboardLayout
       apartmentName={apartmentName}
       userName={userName}
-      navItems={navItems}
       onLogout={logout}
     >
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            입주민 차량 관리
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            입주민 차량 정보를 등록하고 관리합니다.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">입주민 차량 관리</h2>
+            <p className="mt-1 text-sm text-muted-foreground">입주민 차량 정보를 등록하고 관리합니다.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setBulkOpen(true)}>
+              <Upload size={14} aria-hidden="true" />
+              일괄 등록
+            </Button>
+            <Button onClick={openCreateModal}>
+              <Plus size={16} aria-hidden="true" />
+              차량 등록
+            </Button>
+          </div>
         </div>
         <SearchBar
           value={search}
@@ -245,17 +232,10 @@ const ResidentPage = () => {
           filterTitle="정렬 조건"
           placeholder="차량번호, 동/호수, 연락처 검색"
           filters={
-            <select
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value);
-                setPage(1);
-              }}
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            >
+            <Select value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }} className="w-auto">
               <option value="created_at_desc">등록일 최신순</option>
               <option value="building_asc">동/호수 오름차순</option>
-            </select>
+            </Select>
           }
         />
         <div className="flex justify-end gap-2">
