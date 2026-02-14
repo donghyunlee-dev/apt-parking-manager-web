@@ -11,7 +11,7 @@ const ThemeToggle = () => {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-1 rounded-md border border-slate-300 bg-slate-100 p-1 dark:border-[#2a3a5b] dark:bg-[#0b162c]">
+    <div className="flex items-center gap-1 rounded-md border border-border bg-muted p-1">
       {options.map((option) => {
         const active = theme === option.mode;
         return (
@@ -22,8 +22,8 @@ const ThemeToggle = () => {
             title={option.label}
             className={
               active
-                ? 'rounded bg-white px-2 py-1 text-xs text-slate-900 shadow-sm dark:bg-[#131f38] dark:text-slate-100 dark:shadow-none'
-                : 'rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-[#131f38] dark:hover:text-slate-200'
+                ? 'rounded bg-card px-2 py-1 text-xs text-foreground shadow-sm'
+                : 'rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             }
             onClick={() => setTheme(option.mode)}
           >

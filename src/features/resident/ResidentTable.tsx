@@ -8,11 +8,11 @@ interface ResidentTableProps {
 }
 
 const ResidentTable = ({ data, onRowClick }: ResidentTableProps) => (
-  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+  <div className="overflow-hidden rounded-xl border border-border bg-card">
     <TableVirtuoso
       data={data}
       fixedHeaderContent={() => (
-        <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+        <tr className="bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <th className="px-4 py-3 text-left">동/호수</th>
           <th className="px-4 py-3 text-left">차량번호</th>
           <th className="px-4 py-3 text-left">연락처</th>
@@ -21,12 +21,12 @@ const ResidentTable = ({ data, onRowClick }: ResidentTableProps) => (
       )}
       itemContent={(_, row) => (
         <>
-          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
+          <td className="px-4 py-3 text-sm text-foreground">
             {formatUnit(row.building, row.unit)}
           </td>
-          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{row.vehicle_number}</td>
-          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{row.phone_number ?? '-'}</td>
-          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{row.created_at}</td>
+          <td className="px-4 py-3 text-sm text-foreground">{row.vehicle_number}</td>
+          <td className="px-4 py-3 text-sm text-foreground">{row.phone_number ?? '-'}</td>
+          <td className="px-4 py-3 text-sm text-foreground">{row.created_at}</td>
         </>
       )}
       components={{
@@ -40,12 +40,12 @@ const ResidentTable = ({ data, onRowClick }: ResidentTableProps) => (
         TableRow: (props) => (
           <tr
             {...props}
-            className="cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="cursor-pointer transition hover:bg-muted/50"
             onClick={() => onRowClick(data[props['data-index'] as number])}
           />
         ),
         TableBody: (props) => (
-          <tbody {...props} className="divide-y divide-slate-100 dark:divide-slate-800" />
+          <tbody {...props} className="divide-y divide-border" />
         ),
         TableHead: (props) => <thead {...props} />,
       }}

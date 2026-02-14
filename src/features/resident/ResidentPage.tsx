@@ -238,25 +238,9 @@ const ResidentPage = () => {
             </Select>
           }
         />
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="h-10 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
-            onClick={() => setBulkOpen(true)}
-          >
-            일괄 등록
-          </button>
-          <button
-            type="button"
-            className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
-            onClick={openCreateModal}
-          >
-            + 차량 등록
-          </button>
-        </div>
 
         {isLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-xl border border-border bg-card p-6">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="mt-4 h-4 w-full" />
             <Skeleton className="mt-2 h-4 w-full" />
@@ -282,54 +266,22 @@ const ResidentPage = () => {
         title={editing ? '차량 정보 수정' : '차량 등록'}
         description="동/호수와 차량번호를 입력하세요."
         onClose={() => setModalOpen(false)}
-        footer={
-          <>
-            <button
-              type="submit"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-              form="resident-form"
-            >
-              {editing ? '수정' : '등록'}
-            </button>
-          </>
-        }
+        footer={<Button type="submit" form="resident-form">{editing ? '수정' : '등록'}</Button>}
       >
         <form id="resident-form" className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-3 md:grid-cols-2">
             <FormField id="building" label="동" required error={errors.building?.message}>
-              <input
-                id="building"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('building')}
-              />
+              <Input id="building" {...register('building')} />
             </FormField>
             <FormField id="unit" label="호수" required error={errors.unit?.message}>
-              <input
-                id="unit"
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                {...register('unit')}
-              />
+              <Input id="unit" {...register('unit')} />
             </FormField>
           </div>
-          <FormField
-            id="vehicle_number"
-            label="차량번호"
-            required
-            error={errors.vehicle_number?.message}
-          >
-            <input
-              id="vehicle_number"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              placeholder="12가3456"
-              {...register('vehicle_number')}
-            />
+          <FormField id="vehicle_number" label="차량번호" required error={errors.vehicle_number?.message}>
+            <Input id="vehicle_number" placeholder="12가3456" {...register('vehicle_number')} />
           </FormField>
           <FormField id="phone_number" label="연락처" helperText="선택 입력">
-            <input
-              id="phone_number"
-              className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              {...register('phone_number')}
-            />
+            <Input id="phone_number" {...register('phone_number')} />
           </FormField>
         </form>
       </Modal>
@@ -341,27 +293,9 @@ const ResidentPage = () => {
         onClose={() => setBulkOpen(false)}
         footer={
           <>
-            <button
-              type="button"
-              className="rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
-              onClick={() => setBulkOpen(false)}
-            >
-              닫기
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
-              onClick={handleTemplateDownload}
-            >
-              템플릿 다운로드
-            </button>
-            <button
-              type="button"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
-              onClick={handleBulkUpload}
-            >
-              업로드
-            </button>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)}>닫기</Button>
+            <Button variant="outline" onClick={handleTemplateDownload}>템플릿 다운로드</Button>
+            <Button onClick={handleBulkUpload}>업로드</Button>
           </>
         }
       >
@@ -384,20 +318,18 @@ const ResidentPage = () => {
             }}
           />
           {bulkFile && (
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-foreground">
               선택한 파일: {bulkFile.name}
             </p>
           )}
           {bulkPreview !== null && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               예상 업로드 건수: {bulkPreview}건
             </p>
           )}
           {bulkResult && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-              <p>
-                총 {bulkResult.total}건 중 성공 {bulkResult.success}건
-              </p>
+            <div className="rounded-lg border border-border bg-muted p-4 text-sm">
+              <p>총 {bulkResult.total}건 중 성공 {bulkResult.success}건</p>
               <p>실패 {bulkResult.failed}건</p>
             </div>
           )}
