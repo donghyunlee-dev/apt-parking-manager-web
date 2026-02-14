@@ -49,6 +49,7 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    console.log('[v0] Form submitted:', values);
     if (saveName) {
       localStorage.setItem(STORAGE_APT_NAME, values.aptName);
       localStorage.setItem(STORAGE_SAVE, 'true');
@@ -56,11 +57,15 @@ const LoginPage = () => {
       localStorage.removeItem(STORAGE_APT_NAME);
       localStorage.setItem(STORAGE_SAVE, 'false');
     }
+    console.log('[v0] Calling login...');
     await login(values.aptName, values.finNo);
+    console.log('[v0] Login function returned');
   };
 
   useEffect(() => {
+    console.log('[v0] Auth state changed:', { isAuthenticated });
     if (isAuthenticated) {
+      console.log('[v0] Navigating to dashboard');
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
