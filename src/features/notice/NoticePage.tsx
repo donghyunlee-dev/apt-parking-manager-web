@@ -43,8 +43,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const NoticePage = () => {
-  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ? '����Ʈ');
-  const userName = useAuthStore((state) => state.user?.bouncer_name ? '������');
+  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ?? '');
+  const userName = useAuthStore((state) => state.user?.bouncer_name ?? '');
   const logout = useAuthStore((state) => state.logout);
   const pushToast = useUiStore((state) => state.pushToast);
 
