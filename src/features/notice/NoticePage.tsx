@@ -23,17 +23,17 @@ import {
 import NoticeEditor from './NoticeEditor';
 
 const navItems = [
-  { label: '��ú���', to: '/dashboard' },
-  { label: '���� ����', to: '/bouncers' },
-  { label: '���ֹ� ���� ����', to: '/residents' },
-  { label: '�湮 ���� ����', to: '/visitors' },
-  { label: '���� ��ȸ', to: '/reports' },
-  { label: '�������� ����', to: '/notices' },
+  { label: '대시보드', to: '/dashboard' },
+  { label: '경비원 관리', to: '/bouncers' },
+  { label: '입주민 차량 관리', to: '/residents' },
+  { label: '방문 차량 관리', to: '/visitors' },
+  { label: '차량 조회', to: '/reports' },
+  { label: '공지사항 관리', to: '/notices' },
 ];
 
 const formSchema = z.object({
-  title: z.string().min(1, '������ �Է��ϼ���.'),
-  content: z.string().min(1, '������ �Է��ϼ���.'),
+  title: z.string().min(1, '제목을 입력하세요.'),
+  content: z.string().min(1, '내용을 입력하세요.'),
   is_important: z.boolean(),
   is_visible: z.boolean(),
   start_date: z.string().optional(),
@@ -43,8 +43,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const NoticePage = () => {
-  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ? '����Ʈ');
-  const userName = useAuthStore((state) => state.user?.bouncer_name ? '������');
+  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ?? '아파트');
+  const userName = useAuthStore((state) => state.user?.bouncer_name ?? '관리자');
   const logout = useAuthStore((state) => state.logout);
   const pushToast = useUiStore((state) => state.pushToast);
 
@@ -74,7 +74,7 @@ const NoticePage = () => {
       }),
   });
 
-  const filteredNotices = useMemo(() => data?.items ? [], [data]);
+  const filteredNotices = useMemo(() => data?.items ?? [], [data]);
 
   useEffect(() => {
     setOrderedNotices(filteredNotices);
@@ -85,9 +85,9 @@ const NoticePage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notices'] });
       setModalOpen(false);
-      pushToast({ type: 'success', message: '���������� ����߽��ϴ�.' });
+      pushToast({ type: 'success', message: '공지사항을 등록했습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '��Ͽ� �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '등록에 실패했습니다.' }),
   });
 
   const updateMutation = useMutation({
@@ -95,18 +95,18 @@ const NoticePage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notices'] });
       setModalOpen(false);
-      pushToast({ type: 'success', message: '���������� �����߽��ϴ�.' });
+      pushToast({ type: 'success', message: '공지사항을 수정했습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '������ �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '수정에 실패했습니다.' }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteNotice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notices'] });
-      pushToast({ type: 'success', message: '���������� �����߽��ϴ�.' });
+      pushToast({ type: 'success', message: '공지사항을 삭제했습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '������ �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '삭제에 실패했습니다.' }),
   });
 
   const visibilityMutation = useMutation({
@@ -140,16 +140,16 @@ const NoticePage = () => {
 
   const columns = useMemo(
     () => [
-      { id: 'title', header: '����', accessor: (row: Notice) => row.title },
+      { id: 'title', header: '제목', accessor: (row: Notice) => row.title },
       {
         id: 'important',
-        header: '�߿�',
+        header: '중요',
         cell: (row: Notice) =>
-          row.is_important ? <StatusBadge label="�߿�" variant="warning" /> : '-',
+          row.is_important ? <StatusBadge label="중요" variant="warning" /> : '-',
       },
       {
         id: 'visible',
-        header: '����',
+        header: '공개',
         cell: (row: Notice) => (
           <button
             type="button"
@@ -163,7 +163,7 @@ const NoticePage = () => {
           </button>
         ),
       },
-      { id: 'date', header: '�����', accessor: (row: Notice) => row.created_at },
+      { id: 'date', header: '등록일', accessor: (row: Notice) => row.created_at },
     ],
     [visibilityMutation],
   );
@@ -199,15 +199,15 @@ const NoticePage = () => {
       content: row.content,
       is_important: row.is_important,
       is_visible: row.is_visible,
-      start_date: row.start_date ? '',
-      end_date: row.end_date ? '',
+      start_date: row.start_date ?? '',
+      end_date: row.end_date ?? '',
     });
     setModalOpen(true);
   };
 
   const onSubmit = (values: FormValues) => {
     if (values.start_date && values.end_date && values.start_date > values.end_date) {
-      pushToast({ type: 'error', message: '�������� �����Ϻ��� ���� �� �����ϴ�.' });
+      pushToast({ type: 'error', message: '게시 시작일은 종료일보다 늦을 수 없습니다.' });
       return;
     }
 
@@ -228,14 +228,16 @@ const NoticePage = () => {
     >
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">�������� ����</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">���������� ����ϰ� ���� ���¸� �����մϴ�.</p>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">공지사항 관리</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">공지사항을 작성하고 노출 상태를 관리합니다.</p>
         </div>
         <SearchBar
           value={search}
           onChange={setSearch}
           onSubmit={() => setPage(1)}
-          placeholder="�������� �˻�"
+          filterTitle="노출 조건"
+          actionTitle="등록"
+          placeholder="공지사항 검색"
           filters={
             <div className="flex flex-wrap gap-2">
               <select
@@ -246,9 +248,9 @@ const NoticePage = () => {
                 }}
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               >
-                <option value="">���� ��ü</option>
-                <option value="true">����</option>
-                <option value="false">�����</option>
+                <option value="">공개 전체</option>
+                <option value="true">공개</option>
+                <option value="false">비공개</option>
               </select>
               <select
                 value={filterImportant}
@@ -258,9 +260,9 @@ const NoticePage = () => {
                 }}
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               >
-                <option value="">�߿� ��ü</option>
-                <option value="true">�߿�</option>
-                <option value="false">�Ϲ�</option>
+                <option value="">중요 전체</option>
+                <option value="true">중요</option>
+                <option value="false">일반</option>
               </select>
             </div>
           }
@@ -270,7 +272,7 @@ const NoticePage = () => {
               className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
               onClick={openCreateModal}
             >
-              + ���� ���
+              + 공지 등록
             </button>
           }
         />
@@ -288,7 +290,7 @@ const NoticePage = () => {
               <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    ����
+                    순서
                   </th>
                   {columns.map((column) => (
                     <th
@@ -322,20 +324,20 @@ const NoticePage = () => {
               </tbody>
             </table>
             <div className="border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              �巡�׷� ������ ������ �� �ֽ��ϴ�. (���� ������ ��)
+              드래그로 표시 순서를 바꿀 수 있습니다. (저장 기능은 없음)
             </div>
           </div>
         ) : (
           <EmptyState
-            title="���������� �����ϴ�."
-            description="���ο� ���������� ����غ�����."
+            title="공지사항이 없습니다."
+            description="새로운 공지사항을 등록해보세요."
             action={
               <button
                 type="button"
                 className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
                 onClick={openCreateModal}
               >
-                ���� ���
+                공지 등록
               </button>
             }
           />
@@ -344,8 +346,8 @@ const NoticePage = () => {
 
       <Modal
         open={modalOpen}
-        title={editing ? '�������� ����' : '�������� ���'}
-        description="�߿� ���� ���ο� ���� �Ⱓ�� �����ϼ���."
+        title={editing ? '공지사항 수정' : '공지사항 등록'}
+        description="중요 여부와 공개 기간을 설정하세요."
         onClose={() => setModalOpen(false)}
         footer={
           <>
@@ -354,12 +356,12 @@ const NoticePage = () => {
                 type="button"
                 className="rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 dark:border-rose-500/40 dark:text-rose-200"
                 onClick={() => {
-                  if (window.confirm('���� �����Ͻðڽ��ϱ�?')) {
+                  if (window.confirm('공지를 삭제하시겠습니까?')) {
                     deleteMutation.mutate(editing.notice_id);
                   }
                 }}
               >
-                ����
+                삭제
               </button>
             )}
 
@@ -368,7 +370,7 @@ const NoticePage = () => {
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
               form="notice-form"
             >
-              {editing ? '����' : '���'}
+              {editing ? '수정' : '등록'}
             </button>
             <button
               type="button"
@@ -378,32 +380,32 @@ const NoticePage = () => {
                 setPreviewOpen(true);
               }}
             >
-              �̸�����
+              미리보기
             </button>
           </>
         }
       >
         <form id="notice-form" className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <FormField id="title" label="����" required error={errors.title?.message}>
+          <FormField id="title" label="제목" required error={errors.title?.message}>
             <input
               id="title"
               className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               {...register('title')}
             />
           </FormField>
-          <FormField id="content" label="����" required error={errors.content?.message}>
+          <FormField id="content" label="내용" required error={errors.content?.message}>
             <NoticeEditor value={contentValue} onChange={(value) => setValue('content', value)} />
           </FormField>
           <div className="flex flex-wrap gap-4 text-sm">
             <label className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-              <input type="checkbox" {...register('is_important')} /> �߿� ����
+              <input type="checkbox" {...register('is_important')} /> 중요 공지
             </label>
             <label className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-              <input type="checkbox" {...register('is_visible')} /> ����
+              <input type="checkbox" {...register('is_visible')} /> 공개
             </label>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <FormField id="start_date" label="���� ������">
+            <FormField id="start_date" label="게시 시작일">
               <input
                 id="start_date"
                 type="date"
@@ -411,7 +413,7 @@ const NoticePage = () => {
                 {...register('start_date')}
               />
             </FormField>
-            <FormField id="end_date" label="���� ������">
+            <FormField id="end_date" label="게시 종료일">
               <input
                 id="end_date"
                 type="date"
@@ -425,12 +427,12 @@ const NoticePage = () => {
 
       <Modal
         open={previewOpen}
-        title="�̸�����"
-        description="����� �� ���� ȭ�� �����Դϴ�."
+        title="미리보기"
+        description="현재 작성 중인 내용 화면입니다."
         onClose={() => setPreviewOpen(false)}
       >
         <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 text-xs text-slate-400">��������</div>
+          <div className="mb-2 text-xs text-slate-400">공지내용</div>
           <div
             className="prose max-w-none text-sm"
             dangerouslySetInnerHTML={{ __html: previewContent }}
@@ -442,4 +444,3 @@ const NoticePage = () => {
 };
 
 export default NoticePage;
-

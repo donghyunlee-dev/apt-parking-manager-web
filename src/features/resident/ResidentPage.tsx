@@ -25,28 +25,26 @@ import ResidentTable from './ResidentTable';
 import { vehicleNumberRegex } from './utils';
 
 const navItems = [
-  { label: '��ú���', to: '/dashboard' },
-  { label: '���� ����', to: '/bouncers' },
-  { label: '���ֹ� ���� ����', to: '/residents' },
-  { label: '�湮 ���� ����', to: '/visitors' },
-  { label: '���� ��ȸ', to: '/reports' },
-  { label: '�������� ����', to: '/notices' },
+  { label: '대시보드', to: '/dashboard' },
+  { label: '경비원 관리', to: '/bouncers' },
+  { label: '입주민 차량 관리', to: '/residents' },
+  { label: '방문 차량 관리', to: '/visitors' },
+  { label: '차량 조회', to: '/reports' },
+  { label: '공지사항 관리', to: '/notices' },
 ];
 
 const formSchema = z.object({
-  building: z.string().min(1, '���� �Է��ϼ���.'),
-  unit: z.string().min(1, 'ȣ���� �Է��ϼ���.'),
-  vehicle_number: z
-    .string()
-    .regex(vehicleNumberRegex, '������ȣ ������ �ùٸ��� �ʽ��ϴ�.'),
+  building: z.string().min(1, '동을 입력하세요.'),
+  unit: z.string().min(1, '호수를 입력하세요.'),
+  vehicle_number: z.string().regex(vehicleNumberRegex, '차량번호 형식이 올바르지 않습니다.'),
   phone_number: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const ResidentPage = () => {
-  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ?? '����Ʈ');
-  const userName = useAuthStore((state) => state.user?.bouncer_name ?? '������');
+  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ?? '아파트');
+  const userName = useAuthStore((state) => state.user?.bouncer_name ?? '관리자');
   const logout = useAuthStore((state) => state.logout);
   const pushToast = useUiStore((state) => state.pushToast);
 
@@ -81,9 +79,9 @@ const ResidentPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resident-vehicles'] });
       setModalOpen(false);
-      pushToast({ type: 'success', message: '������ ����߽��ϴ�.' });
+      pushToast({ type: 'success', message: '입주민 차량을 등록했습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '��Ͽ� �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '등록에 실패했습니다.' }),
   });
 
   const updateMutation = useMutation({
@@ -92,18 +90,18 @@ const ResidentPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resident-vehicles'] });
       setModalOpen(false);
-      pushToast({ type: 'success', message: '���� ������ �����߽��ϴ�.' });
+      pushToast({ type: 'success', message: '입주민 차량 정보를 수정했습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '������ �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '수정에 실패했습니다.' }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteResidentVehicle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resident-vehicles'] });
-      pushToast({ type: 'success', message: '���� ������ �����߽��ϴ�.' });
+      pushToast({ type: 'success', message: '입주민 차량을 삭제했습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '������ �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '삭제에 실패했습니다.' }),
   });
 
   const bulkMutation = useMutation({
@@ -111,9 +109,9 @@ const ResidentPage = () => {
     onSuccess: (result) => {
       setBulkResult(result);
       queryClient.invalidateQueries({ queryKey: ['resident-vehicles'] });
-      pushToast({ type: 'success', message: '�ϰ� ����� �Ϸ�Ǿ����ϴ�.' });
+      pushToast({ type: 'success', message: '일괄 등록이 완료되었습니다.' });
     },
-    onError: () => pushToast({ type: 'error', message: '�ϰ� ��Ͽ� �����߽��ϴ�.' }),
+    onError: () => pushToast({ type: 'error', message: '일괄 등록에 실패했습니다.' }),
   });
 
   const {
@@ -133,7 +131,7 @@ const ResidentPage = () => {
     return (
       <div className="flex items-center justify-between border border-t-0 border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
         <span>
-          {data.total}�� �� {(page - 1) * 10 + 1}-{Math.min(page * 10, data.total)}
+          {data.total}건 중 {(page - 1) * 10 + 1}-{Math.min(page * 10, data.total)}
         </span>
         <div className="flex gap-2">
           <button
@@ -142,7 +140,7 @@ const ResidentPage = () => {
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
           >
-            ����
+            이전
           </button>
           <button
             type="button"
@@ -150,7 +148,7 @@ const ResidentPage = () => {
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page >= totalPages}
           >
-            ����
+            다음
           </button>
         </div>
       </div>
@@ -184,7 +182,7 @@ const ResidentPage = () => {
 
   const handleBulkUpload = () => {
     if (!bulkFile) {
-      pushToast({ type: 'error', message: '���ε��� ������ �����ϼ���.' });
+      pushToast({ type: 'error', message: '업로드할 파일을 선택하세요.' });
       return;
     }
     bulkMutation.mutate(bulkFile);
@@ -204,14 +202,16 @@ const ResidentPage = () => {
     >
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">���ֹ� ���� ����</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">���ֹ� ���� ������ ����ϰ� �����մϴ�.</p>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">입주민 차량 관리</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">입주민 차량 정보를 등록하고 관리합니다.</p>
         </div>
         <SearchBar
           value={search}
           onChange={setSearch}
           onSubmit={() => setPage(1)}
-          placeholder="������ȣ, ��/ȣ��, ����ó �˻�"
+          filterTitle="정렬 조건"
+          actionTitle="등록"
+          placeholder="차량번호, 동/호수, 연락처 검색"
           filters={
             <select
               value={sort}
@@ -221,8 +221,8 @@ const ResidentPage = () => {
               }}
               className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
-              <option value="created_at_desc">����� �ֽż�</option>
-              <option value="building_asc">��/ȣ�� ��������</option>
+              <option value="created_at_desc">등록일 최신순</option>
+              <option value="building_asc">동/호수 오름차순</option>
             </select>
           }
           actions={
@@ -232,14 +232,14 @@ const ResidentPage = () => {
                 className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
                 onClick={() => setBulkOpen(true)}
               >
-                �ϰ� ���
+                일괄 등록
               </button>
               <button
                 type="button"
                 className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
                 onClick={openCreateModal}
               >
-                + ���� ���
+                + 차량 등록
               </button>
             </div>
           }
@@ -259,15 +259,15 @@ const ResidentPage = () => {
           </>
         ) : (
           <EmptyState
-            title="��ϵ� ������ �����ϴ�."
-            description="���� ������ ����غ�����."
+            title="등록된 입주민 차량이 없습니다."
+            description="새로운 차량을 등록해보세요."
             action={
               <button
                 type="button"
                 className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
                 onClick={openCreateModal}
               >
-                ���� ���
+                차량 등록
               </button>
             }
           />
@@ -276,8 +276,8 @@ const ResidentPage = () => {
 
       <Modal
         open={modalOpen}
-        title={editing ? '���� ���� ����' : '���� ���'}
-        description="��/ȣ���� ������ȣ�� �Է��ϼ���."
+        title={editing ? '차량 정보 수정' : '차량 등록'}
+        description="동/호수와 차량번호를 입력하세요."
         onClose={() => setModalOpen(false)}
         footer={
           <>
@@ -286,12 +286,12 @@ const ResidentPage = () => {
                 type="button"
                 className="rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 dark:border-rose-500/40 dark:text-rose-200"
                 onClick={() => {
-                  if (window.confirm('���� �����Ͻðڽ��ϱ�?')) {
+                  if (window.confirm('차량을 삭제하시겠습니까?')) {
                     deleteMutation.mutate(editing.vehicle_id);
                   }
                 }}
               >
-                ����
+                삭제
               </button>
             )}
 
@@ -300,21 +300,21 @@ const ResidentPage = () => {
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
               form="resident-form"
             >
-              {editing ? '����' : '���'}
+              {editing ? '수정' : '등록'}
             </button>
           </>
         }
       >
         <form id="resident-form" className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-3 md:grid-cols-2">
-            <FormField id="building" label="��" required error={errors.building?.message}>
+            <FormField id="building" label="동" required error={errors.building?.message}>
               <input
                 id="building"
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                 {...register('building')}
               />
             </FormField>
-            <FormField id="unit" label="ȣ��" required error={errors.unit?.message}>
+            <FormField id="unit" label="호수" required error={errors.unit?.message}>
               <input
                 id="unit"
                 className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
@@ -322,15 +322,15 @@ const ResidentPage = () => {
               />
             </FormField>
           </div>
-          <FormField id="vehicle_number" label="������ȣ" required error={errors.vehicle_number?.message}>
+          <FormField id="vehicle_number" label="차량번호" required error={errors.vehicle_number?.message}>
             <input
               id="vehicle_number"
               className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              placeholder="12��3456"
+              placeholder="12가3456"
               {...register('vehicle_number')}
             />
           </FormField>
-          <FormField id="phone_number" label="����ó" helperText="���� �Է�">
+          <FormField id="phone_number" label="연락처" helperText="선택 입력">
             <input
               id="phone_number"
               className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
@@ -342,8 +342,8 @@ const ResidentPage = () => {
 
       <Modal
         open={bulkOpen}
-        title="���� �ϰ� ���"
-        description="Excel ������ ���ε��ϰ� ����� Ȯ���ϼ���."
+        title="차량 일괄 등록"
+        description="Excel 파일을 업로드하고 결과를 확인하세요."
         onClose={() => setBulkOpen(false)}
         footer={
           <>
@@ -352,21 +352,21 @@ const ResidentPage = () => {
               className="rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
               onClick={() => setBulkOpen(false)}
             >
-              �ݱ�
+              닫기
             </button>
             <button
               type="button"
               className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:text-slate-200"
               onClick={handleTemplateDownload}
             >
-              ���ø� �ٿ�ε�
+              템플릿 다운로드
             </button>
             <button
               type="button"
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-emerald-400 dark:text-slate-900"
               onClick={handleBulkUpload}
             >
-              ���ε�
+              업로드
             </button>
           </>
         }
@@ -390,15 +390,15 @@ const ResidentPage = () => {
             }}
           />
           {bulkFile && (
-            <p className="text-sm text-slate-600 dark:text-slate-300">���õ� ����: {bulkFile.name}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">선택한 파일: {bulkFile.name}</p>
           )}
           {bulkPreview !== null && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">���� ���ε� �Ǽ�: {bulkPreview}��</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">예상 업로드 건수: {bulkPreview}건</p>
           )}
           {bulkResult && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-              <p>�� {bulkResult.total}�� �� ���� {bulkResult.success}��</p>
-              <p>���� {bulkResult.failed}��</p>
+              <p>총 {bulkResult.total}건 중 성공 {bulkResult.success}건</p>
+              <p>실패 {bulkResult.failed}건</p>
             </div>
           )}
         </div>
@@ -408,4 +408,3 @@ const ResidentPage = () => {
 };
 
 export default ResidentPage;
-

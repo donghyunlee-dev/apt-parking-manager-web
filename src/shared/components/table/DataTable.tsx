@@ -41,21 +41,24 @@ const DataTable = <T,>({
   pagination,
   emptyMessage = '데이터가 없습니다.',
 }: DataTableProps<T>) => (
-  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-    <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-      <thead className="bg-slate-50 dark:bg-slate-800">
+  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-[#24314a] dark:bg-[#0b162c]">
+    <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-[#24314a]">
+      <thead className="bg-slate-50 dark:bg-[#081226]">
         <tr>
           {columns.map((column) => (
             <th
               key={column.id}
-              className={cn('px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400', alignClass(column.align))}
+              className={cn(
+                'px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#8ea0c7]',
+                alignClass(column.align),
+              )}
             >
               {column.header}
             </th>
           ))}
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+      <tbody className="divide-y divide-slate-100 dark:divide-[#1b2945]">
         {data.map((row) => {
           const rowId = getRowId(row);
           const isSelected = selectedRowIds?.includes(rowId);
@@ -64,9 +67,9 @@ const DataTable = <T,>({
             <tr
               key={rowId}
               className={cn(
-                'transition hover:bg-slate-50 dark:hover:bg-slate-800',
+                'transition hover:bg-slate-50 dark:hover:bg-[#111f3a]',
                 onRowClick && 'cursor-pointer',
-                isSelected && 'bg-slate-100 dark:bg-slate-800',
+                isSelected && 'bg-slate-100 dark:bg-[#192846]',
               )}
               onClick={() => onRowClick?.(row)}
             >
@@ -87,7 +90,7 @@ const DataTable = <T,>({
       <div className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">{emptyMessage}</div>
     )}
     {pagination && (
-      <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
+      <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-[#24314a] dark:text-slate-300">
         <span>
           {pagination.total}개 중 {(pagination.page - 1) * pagination.pageSize + 1}-
           {Math.min(pagination.page * pagination.pageSize, pagination.total)}
@@ -95,7 +98,7 @@ const DataTable = <T,>({
         <div className="flex gap-2">
           <button
             type="button"
-            className="rounded-md border border-slate-200 px-2 py-1 dark:border-slate-700"
+            className="rounded-md border border-slate-300 px-2 py-1 text-slate-700 disabled:opacity-40 dark:border-[#2a3a5b] dark:text-slate-200"
             onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
             disabled={pagination.page === 1}
           >
@@ -103,7 +106,7 @@ const DataTable = <T,>({
           </button>
           <button
             type="button"
-            className="rounded-md border border-slate-200 px-2 py-1 dark:border-slate-700"
+            className="rounded-md border border-slate-300 px-2 py-1 text-slate-700 disabled:opacity-40 dark:border-[#2a3a5b] dark:text-slate-200"
             onClick={() =>
               pagination.onPageChange(
                 Math.min(

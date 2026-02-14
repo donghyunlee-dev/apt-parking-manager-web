@@ -9,17 +9,29 @@ import { fetchScanLogs, searchVehicle } from './api';
 import type { ScanLog } from './types';
 
 const navItems = [
-  { label: '´ë½Ãº¸µå', to: '/dashboard' },
-  { label: '°æºñ¿ø °ü¸®', to: '/bouncers' },
-  { label: 'ÀÔÁÖ¹Î Â÷·® °ü¸®', to: '/residents' },
-  { label: '¹æ¹® Â÷·® °ü¸®', to: '/visitors' },
-  { label: 'Â÷·® Á¶È¸', to: '/reports' },
-  { label: '°øÁö»çÇ× °ü¸®', to: '/notices' },
+  { label: 'ëŒ€ì‹œë³´ë“œ', to: '/dashboard' },
+  { label: 'ê²½ë¹„ì› ê´€ë¦¬', to: '/bouncers' },
+  { label: 'ì…ì£¼ë¯¼ ì°¨ëŸ‰ ê´€ë¦¬', to: '/residents' },
+  { label: 'ë°©ë¬¸ ì°¨ëŸ‰ ê´€ë¦¬', to: '/visitors' },
+  { label: 'ì°¨ëŸ‰ ì¡°íšŒ', to: '/reports' },
+  { label: 'ê³µì§€ì‚¬í•­ ê´€ë¦¬', to: '/notices' },
 ];
 
+const vehicleTypeLabel: Record<ScanLog['vehicle_type'], string> = {
+  resident: 'ì…ì£¼ë¯¼',
+  visitor: 'ë°©ë¬¸',
+  unregistered: 'ë¯¸ë“±ë¡',
+};
+
+const vehicleTypeBadgeClass: Record<ScanLog['vehicle_type'], string> = {
+  resident: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200',
+  visitor: 'border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-200',
+  unregistered: 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200',
+};
+
 const ReportPage = () => {
-  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ?? '¾ÆÆÄÆ®');
-  const userName = useAuthStore((state) => state.user?.bouncer_name ?? '°ü¸®ÀÚ');
+  const apartmentName = useAuthStore((state) => state.apartment?.apt_name ?? 'ì•„íŒŒíŠ¸');
+  const userName = useAuthStore((state) => state.user?.bouncer_name ?? 'ê´€ë¦¬ì');
   const logout = useAuthStore((state) => state.logout);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -32,7 +44,7 @@ const ReportPage = () => {
     event.currentTarget.showPicker?.();
   };
 
-  const { data: scanLogs } = useQuery({
+  const { data: scanLogs, refetch } = useQuery({
     queryKey: ['scan-logs', { scanFrom, scanTo, page }],
     queryFn: () => fetchScanLogs({ from: scanFrom || undefined, to: scanTo || undefined, page, pageSize: 10 }),
   });
@@ -55,10 +67,20 @@ const ReportPage = () => {
 
   const scanColumns = useMemo(
     () => [
-      { id: 'date', header: '½ºÄµ ³¯Â¥', accessor: (row: ScanLog) => row.scan_date },
-      { id: 'time', header: '½Ã°£', accessor: (row: ScanLog) => row.scan_time },
-      { id: 'vehicle', header: 'Â÷·®¹øÈ£', accessor: (row: ScanLog) => row.vehicle_number },
-      { id: 'type', header: 'Â÷·® Å¸ÀÔ', accessor: (row: ScanLog) => row.vehicle_type },
+      { id: 'date', header: 'ìŠ¤ìº” ë‚ ì§œ', accessor: (row: ScanLog) => row.scan_date },
+      { id: 'time', header: 'ì‹œê°„', accessor: (row: ScanLog) => row.scan_time },
+      { id: 'vehicle', header: 'ì°¨ëŸ‰ë²ˆí˜¸', accessor: (row: ScanLog) => row.vehicle_number },
+      {
+        id: 'type',
+        header: 'ì°¨ëŸ‰ íƒ€ì…',
+        cell: (row: ScanLog) => (
+          <span
+            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${vehicleTypeBadgeClass[row.vehicle_type]}`}
+          >
+            {vehicleTypeLabel[row.vehicle_type]}
+          </span>
+        ),
+      },
     ],
     [],
   );
@@ -71,12 +93,39 @@ const ReportPage = () => {
       onLogout={logout}
     >
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Â÷·® Á¶È¸</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Â÷·® ¹øÈ£¿Í ±â°£ Á¶°ÇÀ¸·Î Á¶È¸ÇÏ°í ½ºÄµ ·Î±×¸¦ È®ÀÎÇÕ´Ï´Ù.
-          </p>
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:border-[#2a3560] dark:bg-[#1c2140] dark:text-[#c0c9ff]">
+          ì°¨ëŸ‰ ì¡°íšŒ ë‚´ì—­ì€ ìµœê·¼ ìŠ¤ìº” ë°ì´í„° ê¸°ì¤€ìœ¼ë¡œ ê°±ì‹ ë©ë‹ˆë‹¤.
         </div>
+
+        <section className="rounded-2xl border border-slate-200 bg-[linear-gradient(110deg,#eef2ff_0%,#ffffff_62%,#eff6ff_100%)] p-6 dark:border-[#24314a] dark:bg-[linear-gradient(110deg,#101f3f_0%,#0b162c_62%,#0a1226_100%)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">ì°¨ëŸ‰ ì¡°íšŒ</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">ì°¨ëŸ‰ ë²ˆí˜¸ì™€ ê¸°ê°„ ì¡°ê±´ìœ¼ë¡œ ì¡°íšŒí•˜ê³  ìŠ¤ìº” ë¡œê·¸ë¥¼ í™•ì¸í•©ë‹ˆë‹¤.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="h-10 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-[#2f3f61] dark:text-slate-200 dark:hover:bg-[#111e39]"
+                onClick={() => {
+                  setSearchNumber('');
+                  setSearchResult({ status: 'idle', data: null });
+                }}
+              >
+                ê²€ìƒ‰ ì´ˆê¸°í™”
+              </button>
+              <button
+                type="button"
+                className="h-10 rounded-md bg-indigo-500 px-4 text-sm font-semibold text-white hover:bg-indigo-400 dark:bg-[#7f86f8] dark:text-[#11162c] dark:hover:bg-[#979dff]"
+                onClick={() => {
+                  refetch();
+                }}
+              >
+                ë¡œê·¸ ìƒˆë¡œê³ ì¹¨
+              </button>
+            </div>
+          </div>
+        </section>
 
         <SearchBar
           value={searchNumber}
@@ -85,7 +134,8 @@ const ReportPage = () => {
             setPage(1);
             handleSearch();
           }}
-          placeholder="Â÷·®¹øÈ£·Î Á¶È¸"
+          filterTitle="ì¡°íšŒ ê¸°ê°„"
+          placeholder="ì˜ˆ: 12ê°€3456"
           filters={
             <div className="flex items-center gap-2 whitespace-nowrap">
               <input
@@ -93,7 +143,7 @@ const ReportPage = () => {
                 value={scanFrom}
                 onChange={(event) => setScanFrom(event.target.value)}
                 onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="h-10 rounded-md border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 dark:border-[#2a3a5b] dark:bg-[#081226] dark:text-slate-100"
               />
               <span className="text-sm text-slate-500 dark:text-slate-400">~</span>
               <input
@@ -101,29 +151,27 @@ const ReportPage = () => {
                 value={scanTo}
                 onChange={(event) => setScanTo(event.target.value)}
                 onClick={openDatePicker}
-                className="h-10 rounded-md border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="h-10 rounded-md border border-slate-300 bg-slate-50 px-3 text-sm text-slate-800 dark:border-[#2a3a5b] dark:bg-[#081226] dark:text-slate-100"
               />
             </div>
           }
         />
 
         {searchResult.status === 'loading' && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-            Á¶È¸ Áß...
-          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 dark:border-[#24314a] dark:bg-[#0b162c] dark:text-slate-300">ì¡°íšŒ ì¤‘...</div>
         )}
         {searchResult.status === 'done' && searchResult.data ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
-            <pre className="whitespace-pre-wrap">{JSON.stringify(searchResult.data, null, 2)}</pre>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-700 dark:border-[#24314a] dark:bg-[#0b162c] dark:text-slate-200">
+            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Search Result</div>
+            <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 dark:border-[#1e2a43] dark:bg-[#081226] dark:text-slate-200">{JSON.stringify(searchResult.data, null, 2)}</pre>
           </div>
         ) : null}
         {searchResult.status === 'error' && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600 dark:border-rose-500/30 dark:bg-rose-900/20 dark:text-rose-200">
-            Á¶È¸ ½ÇÆĞ
-          </div>
+          <div className="rounded-xl border border-rose-300 bg-rose-50 p-6 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200">ì¡°íšŒ ì‹¤íŒ¨</div>
         )}
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-[#24314a] dark:bg-[#0b162c]">
+          <div className="mb-3 px-1 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Scan Logs</div>
           {scanLogs && scanLogs.items.length > 0 ? (
             <DataTable
               columns={scanColumns}
@@ -137,13 +185,12 @@ const ReportPage = () => {
               }}
             />
           ) : (
-            <EmptyState title="½ºÄµ ·Î±×°¡ ¾ø½À´Ï´Ù." />
+            <EmptyState title="ìŠ¤ìº” ë¡œê·¸ê°€ ì—†ìŠµë‹ˆë‹¤." />
           )}
-        </div>
+        </section>
       </div>
     </DashboardLayout>
   );
 };
 
 export default ReportPage;
-

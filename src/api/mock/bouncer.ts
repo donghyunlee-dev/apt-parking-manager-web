@@ -13,7 +13,18 @@ const createSample = (index: number): Bouncer => ({
   created_at: now(),
 });
 
-let bouncers: Bouncer[] = Array.from({ length: 10 }, (_, idx) => createSample(idx));
+let bouncers: Bouncer[] = [
+  {
+    apt_code: 'A0001',
+    bouncer_code: 'BNC-TEST-001',
+    bouncer_name: '테스트 경비원',
+    fin_no: '654321',
+    used: 'Y',
+    updated_at: now(),
+    created_at: now(),
+  },
+  ...Array.from({ length: 10 }, (_, idx) => createSample(idx)),
+];
 
 export const bouncerHandlers = [
   http.get('/api/bouncers', ({ request }) => {

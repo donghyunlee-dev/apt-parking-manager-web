@@ -248,6 +248,8 @@ const VisitorPage = () => {
           value={search}
           onChange={setSearch}
           onSubmit={() => setPage(1)}
+          filterTitle="조회 조건"
+          actionTitle="등록"
           placeholder="차량번호, 호수, 연락처 검색"
           filters={
             <div className="flex flex-wrap gap-2">
