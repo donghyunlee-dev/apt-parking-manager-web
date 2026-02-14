@@ -74,7 +74,7 @@ const NoticePage = () => {
       }),
   });
 
-  const filteredNotices = useMemo(() => data?.items ? [], [data]);
+  const filteredNotices = useMemo(() => data?.items ?? [], [data]);
 
   useEffect(() => {
     setOrderedNotices(filteredNotices);
